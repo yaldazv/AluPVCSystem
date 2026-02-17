@@ -1,0 +1,18 @@
+# Виртуална среда
+venv/
+ENV/
+env/
+
+# Python кеш файлове
+__pycache__/
+*.py[cod]
+*$py.class
+
+
+# Django секрети
+.env
+local_settings.py
+
+# Системни файлове
+.DS_Store
+Thumbs.db
