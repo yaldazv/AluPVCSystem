@@ -1,6 +1,6 @@
 from django import forms
 from django.core.exceptions import ValidationError
-from .models import Material
+from .models import Material, Supplier, Delivery
 
 
 class MaterialForm(forms.ModelForm):
@@ -17,14 +17,12 @@ class MaterialForm(forms.ModelForm):
             'material_type',
             'categories',
             'brand',
-            'series',
             'profile_type',
             'chamber_count',
             'has_thermal_break',
             'bar_length',
-            'quantity',
+            'profile_width',
             'unit',
-            'price_per_unit',
         ]
 
         widgets = {
@@ -44,10 +42,6 @@ class MaterialForm(forms.ModelForm):
                 'class': 'form-control',
                 'placeholder': 'REHAU, Aluplast, ETEM...',
             }),
-            'series': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': '70мм, 82мм, E-45...',
-            }),
             'profile_type': forms.Select(attrs={
                 'class': 'form-select',
             }),
@@ -63,18 +57,14 @@ class MaterialForm(forms.ModelForm):
                 'class': 'form-control',
                 'placeholder': '6000',
             }),
-            'quantity': forms.NumberInput(attrs={
+            'profile_width': forms.NumberInput(attrs={
                 'class': 'form-control',
-                'placeholder': '0.0',
-                'step': '0.01',
+                'placeholder': '70',
+                'min': '20',
+                'max': '200',
             }),
             'unit': forms.Select(attrs={
                 'class': 'form-select',
-            }),
-            'price_per_unit': forms.NumberInput(attrs={
-                'class': 'form-control',
-                'placeholder': '0.00',
-                'step': '0.01',
             }),
         }
 
@@ -82,81 +72,118 @@ class MaterialForm(forms.ModelForm):
             'name': 'Име на материала',
             'color': 'Цвят',
             'material_type': 'Тип материал',
-            'categories': 'Категории (PVC/Алуминий)',
+            'categories': 'Категории',
             'brand': 'Марка/Система',
-            'series': 'Серия',
             'profile_type': 'Вид профил',
             'chamber_count': 'Брой камери',
             'has_thermal_break': 'С термомост',
             'bar_length': 'Дължина на прът (мм)',
-            'quantity': 'Налично количество',
+            'profile_width': 'Ширина на профил(мм)',
             'unit': 'Мерна единица',
-            'price_per_unit': 'Цена за единица',
         }
 
         help_texts = {
-            'categories': 'Изберете за кои категории се използва този материал',
+            'categories': 'За профили избери само ЕДНА (PVC или Алуминий). За аксесоари/обков може повече.',
             'chamber_count': 'Приложимо само за PVC профили',
             'has_thermal_break': 'Приложимо само за алуминиеви профили',
-            'quantity': 'Колко единици има на склад в момента',
+            'profile_width': 'Ширина на профила в мм (70, 82, 45 и т.н.)',
         }
 
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Полето "Име" е незадължително - ще се генерира автоматично
+        self.fields['name'].required = False
+        self.fields['name'].widget.attrs['placeholder'] = 'Ще се генерира автоматично ако е празно'
+        self.fields['name'].help_text = 'Оставете празно за автоматично генериране'
+
     def clean_name(self):
-        """Валидация за име - минимум 3 символа"""
         name = self.cleaned_data.get('name')
-        if len(name) < 3:
-            raise ValidationError('Името трябва да съдържа поне 3 символа!')
+
+        if not name or name.strip() == '':
+            return ''
+
+        if len(name.strip()) < 3:
+            raise ValidationError('Ако попълвате име ръчно, трябва да съдържа поне 3 символа!')
+
         return name.strip()
 
-    def clean_price_per_unit(self):
-        """Валидация за цена - трябва да е положително число"""
-        price = self.cleaned_data.get('price_per_unit')
-        if price <= 0:
-            raise ValidationError('Цената трябва да е по-голяма от нула!')
-        return price
-
-    def clean_quantity(self):
-        """Валидация за количество - не може да е отрицателно"""
-        quantity = self.cleaned_data.get('quantity')
-        if quantity < 0:
-            raise ValidationError('Количеството не може да бъде отрицателно!')
-        return quantity
 
     def clean(self):
-        """
-        Cross-field validation:
-        - Ако material_type е 'profile', полетата за профили стават задължителни
-        - Ако е PVC, chamber_count е задължително
-        - Ако е алуминий, has_thermal_break се показва
-        """
         cleaned_data = super().clean()
-        material_type = cleaned_data.get('material_type')
-        profile_type = cleaned_data.get('profile_type')
-        chamber_count = cleaned_data.get('chamber_count')
-        categories = cleaned_data.get('categories')
-
-        # Ако е профил, profile_type е задължително
-        if material_type == 'profile' and not profile_type:
-            self.add_error('profile_type', 'За профили трябва да изберете вид профил!')
-
-        # Ако е PVC профил, chamber_count е задължително
-        if material_type == 'profile' and categories:
-            category_names = [cat.name.lower() for cat in categories]
-            if 'pvc' in category_names and not chamber_count:
-                self.add_error('chamber_count', 'За PVC профили трябва да въведете брой камери!')
 
         return cleaned_data
 
 
-class MaterialUpdateForm(MaterialForm):
-    """
-    Форма за редакция на съществуващ материал.
-    Прави полето 'quantity' read-only (не може да се променя директно).
-    """
+class SupplierForm(forms.ModelForm):
+    class Meta:
+        model = Supplier
+        fields = ['name', 'contact_person', 'phone', 'email', 'address', 'notes', 'is_active']
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # Прави quantity read-only
-        self.fields['quantity'].widget.attrs['readonly'] = True
-        self.fields['quantity'].widget.attrs['class'] += ' bg-light'
-        self.fields['quantity'].help_text = 'Количеството се променя автоматично при доставки и производство'
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Име на фирмата'}),
+            'contact_person': forms.TextInput(
+                attrs={'class': 'form-control', 'placeholder': 'Име на лицето за контакт'}),
+            'phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '+359...'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'email@example.com'}),
+            'address': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+
+        labels = {
+            'name': 'Име на доставчик',
+            'contact_person': 'Лице за контакт',
+            'phone': 'Телефон',
+            'email': 'Email',
+            'address': 'Адрес',
+            'notes': 'Бележки',
+            'is_active': 'Активен',
+        }
+
+
+class DeliveryForm(forms.ModelForm):
+    """Форма за регистриране на доставка"""
+
+    class Meta:
+        model = Delivery
+        fields = ['material', 'supplier', 'quantity', 'delivery_date', 'price_per_unit', 'invoice_number', 'notes']
+
+        widgets = {
+            'material': forms.Select(attrs={'class': 'form-select'}),
+            'supplier': forms.Select(attrs={'class': 'form-select'}),
+            'quantity': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0.01'}),
+            'delivery_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'price_per_unit': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0.01'}),
+            'invoice_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Номер на фактура'}),
+            'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        }
+
+        labels = {
+            'material': 'Материал',
+            'supplier': 'Доставчик',
+            'quantity': 'Количество',
+            'delivery_date': 'Дата на доставка',
+            'price_per_unit': 'Цена за единица',
+            'invoice_number': 'Номер на фактура',
+            'notes': 'Бележки',
+        }
+
+        help_texts = {
+            'quantity': 'Количеството ще се добави автоматично към наличността',
+            'price_per_unit': 'Цена за единица за тази доставка',
+        }
+
+    def clean_quantity(self):
+        """Валидация за количество - трябва да е положително"""
+        quantity = self.cleaned_data.get('quantity')
+        if quantity <= 0:
+            raise ValidationError('Количеството трябва да е по-голямо от нула!')
+        return quantity
+
+    def clean_price_per_unit(self):
+        """Валидация за цена - трябва да е положителна"""
+        price = self.cleaned_data.get('price_per_unit')
+        if price <= 0:
+            raise ValidationError('Цената трябва да е по-голяма от нула!')
+        return price

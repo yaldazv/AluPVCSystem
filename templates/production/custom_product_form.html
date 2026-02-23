@@ -1,0 +1,439 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h3>{{ title }} - Поръчка #{{ order.id }}</h3>
+                    <small>Клиент: {{ order.customer_name }}</small>
+                </div>
+                <div class="card-body">
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                {{ form.non_field_errors }}
+                            </div>
+                        {% endif %}
+
+                        <div class="row">
+                            <!-- Тип продукт и категория -->
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.product_type.id_for_label }}" class="form-label">
+                                        {{ form.product_type.label }}
+                                        <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.product_type }}
+                                    {% if form.product_type.help_text %}
+                                        <small class="form-text text-muted">{{ form.product_type.help_text }}</small>
+                                    {% endif %}
+                                    {% if form.product_type.errors %}
+                                        <div class="text-danger">{{ form.product_type.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.category.id_for_label }}" class="form-label">
+                                        {{ form.category.label }}
+                                        <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.category }}
+                                    {% if form.category.help_text %}
+                                        <small class="form-text text-muted">{{ form.category.help_text }}</small>
+                                    {% endif %}
+                                    {% if form.category.errors %}
+                                        <div class="text-danger">{{ form.category.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <!-- Размери -->
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.width.id_for_label }}" class="form-label">
+                                        {{ form.width.label }}
+                                        <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.width }}
+                                    {% if form.width.help_text %}
+                                        <small class="form-text text-muted">{{ form.width.help_text }}</small>
+                                    {% endif %}
+                                    {% if form.width.errors %}
+                                        <div class="text-danger">{{ form.width.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.height.id_for_label }}" class="form-label">
+                                        {{ form.height.label }}
+                                        <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.height }}
+                                    {% if form.height.help_text %}
+                                        <small class="form-text text-muted">{{ form.height.help_text }}</small>
+                                    {% endif %}
+                                    {% if form.height.errors %}
+                                        <div class="text-danger">{{ form.height.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <!-- Брой части -->
+                            <div class="col-md-12">
+                                <div class="mb-3">
+                                    <label for="{{ form.parts_count.id_for_label }}" class="form-label">
+                                        {{ form.parts_count.label }}
+                                        <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.parts_count }}
+                                    {% if form.parts_count.help_text %}
+                                        <small class="form-text text-muted">{{ form.parts_count.help_text }}</small>
+                                    {% endif %}
+                                    {% if form.parts_count.errors %}
+                                        <div class="text-danger">{{ form.parts_count.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Динамични полета за всяка част -->
+                        <div id="parts_config_container" style="display:none;">
+                            <h5 class="mt-3">Конфигурация на частите</h5>
+                            <p class="text-muted small">Изберете за всяка част дали е фиксирана или отваряема</p>
+                            <div id="parts_list" class="row"></div>
+                        </div>
+
+                        <!-- Полета за неравни части (ръчно въвеждане на размери) -->
+                        <div id="unequal_parts_container" style="display:none;">
+                            <h5 class="mt-3">Размери на частите</h5>
+                            <p class="text-muted small">Въведете ширината за всяка част (в мм)</p>
+                            <div id="custom_widths_list" class="row"></div>
+                            <small class="form-text text-muted">
+                                <strong>Забележка:</strong> За 2 части въведете размера до оста на делителя.
+                                За 3 части - размер на първа част (до ос) и размер на втора част (между оси).
+                            </small>
+                        </div>
+
+                        <!-- Делители и части -->
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3 form-check">
+                                    {{ form.has_mullions }}
+                                    <label for="{{ form.has_mullions.id_for_label }}" class="form-check-label">
+                                        {{ form.has_mullions.label }}
+                                    </label>
+                                    {% if form.has_mullions.help_text %}
+                                        <small class="form-text text-muted d-block">{{ form.has_mullions.help_text }}</small>
+                                    {% endif %}
+                                    {% if form.has_mullions.errors %}
+                                        <div class="text-danger">{{ form.has_mullions.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="{{ form.mullion_count.id_for_label }}" class="form-label">
+                                        {{ form.mullion_count.label }}
+                                    </label>
+                                    {{ form.mullion_count }}
+                                    {% if form.mullion_count.help_text %}
+                                        <small class="form-text text-muted">{{ form.mullion_count.help_text }}</small>
+                                    {% endif %}
+                                    {% if form.mullion_count.errors %}
+                                        <div class="text-danger">{{ form.mullion_count.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <div class="mb-3 form-check">
+                                    {{ form.is_equal_parts }}
+                                    <label for="{{ form.is_equal_parts.id_for_label }}" class="form-check-label">
+                                        {{ form.is_equal_parts.label }}
+                                    </label>
+                                    {% if form.is_equal_parts.help_text %}
+                                        <small class="form-text text-muted d-block">{{ form.is_equal_parts.help_text }}</small>
+                                    {% endif %}
+                                    {% if form.is_equal_parts.errors %}
+                                        <div class="text-danger">{{ form.is_equal_parts.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Материали (Many-to-Many) -->
+                        <div class="mb-3">
+                            <label class="form-label">
+                                {{ form.materials.label }}
+                            </label>
+                            {% if form.materials.help_text %}
+                                <small class="form-text text-muted d-block mb-2">{{ form.materials.help_text }}</small>
+                            {% endif %}
+
+                            <div class="border rounded p-3 bg-light" style="max-height: 200px; overflow-y: auto;">
+                                {% if form.materials.field.queryset.exists %}
+                                    {% for choice in form.materials %}
+                                        <div class="form-check">
+                                            {{ choice.tag }}
+                                            <label class="form-check-label" for="{{ choice.id_for_label }}">
+                                                {{ choice.choice_label }}
+                                            </label>
+                                        </div>
+                                    {% endfor %}
+                                {% else %}
+                                    <p class="text-muted mb-0">Няма налични материали. Добавете материали от раздел "Материали".</p>
+                                {% endif %}
+                            </div>
+
+                            {% if form.materials.errors %}
+                                <div class="text-danger mt-1">{{ form.materials.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{% url 'production:order-detail' order.pk %}" class="btn btn-secondary">
+                                ← Назад към поръчката
+                            </a>
+                            <button type="submit" class="btn btn-success">
+                                💾 Запази продукт
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const productTypeSelect = document.getElementById('id_product_type');
+    const partsCountSelect = document.getElementById('id_parts_count');
+    const partsConfigContainer = document.getElementById('parts_config_container');
+    const partsList = document.getElementById('parts_list');
+    const hasMullionsCheckbox = document.getElementById('id_has_mullions');
+    const mullionCountInput = document.getElementById('id_mullion_count');
+    const isEqualPartsCheckbox = document.getElementById('id_is_equal_parts');
+
+    // Функция за скриване/показване на полета според типа продукт
+    function toggleFieldsByProductType() {
+        const isDoor = productTypeSelect.value === 'door';
+
+        // Намираме контейнерите на полетата
+        const partsCountRow = partsCountSelect.closest('.row');
+        const mullionsRow = hasMullionsCheckbox.closest('.row');
+
+        if (isDoor) {
+            // При врата - опростяваме всичко
+            partsCountSelect.value = '1';
+            hasMullionsCheckbox.checked = false;
+            isEqualPartsCheckbox.checked = true;
+            mullionCountInput.value = '0';
+
+            // Скриваме сложните контейнери
+            partsConfigContainer.style.display = 'none';
+            document.getElementById('unequal_parts_container').style.display = 'none';
+
+            // Скриваме редовете с полета
+            if (partsCountRow) partsCountRow.style.display = 'none';
+            if (mullionsRow) mullionsRow.style.display = 'none';
+        } else {
+            // При прозорец - показваме всички полета
+            if (partsCountRow) partsCountRow.style.display = 'block';
+            if (mullionsRow) mullionsRow.style.display = 'flex';
+
+            // Генерираме динамичните полета
+            generatePartsFields();
+            generateCustomWidthsFields();
+        }
+    }
+
+    // Event listener за промяна на типа продукт
+    if (productTypeSelect) {
+        productTypeSelect.addEventListener('change', toggleFieldsByProductType);
+        // Извикваме веднага при зареждане
+        toggleFieldsByProductType();
+    }
+    const unequalPartsContainer = document.getElementById('unequal_parts_container');
+    const customWidthsList = document.getElementById('custom_widths_list');
+
+    // Зареждане на съществуваща конфигурация (при редакция)
+    {% if product %}
+    let existingConfig = {{ product.parts_config|safe|default:"[]" }};
+    let existingWidths = {{ product.custom_widths|safe|default:"{}" }};
+    {% else %}
+    let existingConfig = [];
+    let existingWidths = {};
+    {% endif %}
+
+    // Генериране на полета за всяка част (ФИКС/ОТВАРЯЕМА)
+    function generatePartsFields() {
+        const count = parseInt(partsCountSelect.value) || 1;
+        partsList.innerHTML = '';
+
+        if (count === 1) {
+            partsConfigContainer.style.display = 'none';
+            return;
+        }
+
+        partsConfigContainer.style.display = 'block';
+
+        for (let i = 1; i <= count; i++) {
+            const existingPart = existingConfig.find(p => p.position === i);
+            const selectedType = existingPart ? existingPart.type : 'fix';
+
+            const partDiv = document.createElement('div');
+            partDiv.className = 'col-md-4 mb-3';
+            partDiv.innerHTML = `
+                <div class="card">
+                    <div class="card-body">
+                        <label class="form-label fw-bold">Част ${i}:</label>
+                        <select name="part_${i}_type" class="form-select" required>
+                            <option value="fix" ${selectedType === 'fix' ? 'selected' : ''}>ФИКС (Неотваряемо)</option>
+                            <option value="open" ${selectedType === 'open' ? 'selected' : ''}>КРИЛО (Отваряемо)</option>
+                        </select>
+                    </div>
+                </div>
+            `;
+            partsList.appendChild(partDiv);
+        }
+
+        updateMullionCount();
+    }
+
+    // Генериране на полета за ръчно въвеждане на размери (за неравни части)
+    function generateCustomWidthsFields() {
+        const count = parseInt(partsCountSelect.value) || 1;
+        const isEqual = isEqualPartsCheckbox.checked;
+
+        customWidthsList.innerHTML = '';
+
+        // Показваме само ако има повече от 1 част И не са равни
+        if (count === 1 || isEqual) {
+            unequalPartsContainer.style.display = 'none';
+            return;
+        }
+
+        unequalPartsContainer.style.display = 'block';
+
+        // За 2 части - само първата част (до ос на делителя)
+        if (count === 2) {
+            const existingWidth = existingWidths.part1_width || '';
+            const widthDiv = document.createElement('div');
+            widthDiv.className = 'col-md-6 mb-3';
+            widthDiv.innerHTML = `
+                <div class="card">
+                    <div class="card-body">
+                        <label class="form-label fw-bold">Ширина на Част 1 (до оста на делителя):</label>
+                        <input type="number" name="part_1_width" class="form-control"
+                               placeholder="мм" min="100" step="1" value="${existingWidth}" required>
+                        <small class="text-muted">Размер от ръба до оста на делителя</small>
+                    </div>
+                </div>
+            `;
+            customWidthsList.appendChild(widthDiv);
+        }
+        // За 3 части - първа и втора част
+        else if (count === 3) {
+            const existingWidth1 = existingWidths.part1_width || '';
+            const existingWidth2 = existingWidths.part2_width || '';
+
+            const width1Div = document.createElement('div');
+            width1Div.className = 'col-md-6 mb-3';
+            width1Div.innerHTML = `
+                <div class="card">
+                    <div class="card-body">
+                        <label class="form-label fw-bold">Ширина на Част 1 (до оста):</label>
+                        <input type="number" name="part_1_width" class="form-control"
+                               placeholder="мм" min="100" step="1" value="${existingWidth1}" required>
+                        <small class="text-muted">От ръба до оста на първия делител</small>
+                    </div>
+                </div>
+            `;
+
+            const width2Div = document.createElement('div');
+            width2Div.className = 'col-md-6 mb-3';
+            width2Div.innerHTML = `
+                <div class="card">
+                    <div class="card-body">
+                        <label class="form-label fw-bold">Ширина на Част 2 (между оси):</label>
+                        <input type="number" name="part_2_width" class="form-control"
+                               placeholder="мм" min="100" step="1" value="${existingWidth2}" required>
+                        <small class="text-muted">Разстояние между осите на делителите</small>
+                    </div>
+                </div>
+            `;
+
+            customWidthsList.appendChild(width1Div);
+            customWidthsList.appendChild(width2Div);
+        }
+        // За повече от 3 части
+        else if (count > 3) {
+            for (let i = 1; i < count; i++) {
+                const existingWidth = existingWidths[`part${i}_width`] || '';
+                const widthDiv = document.createElement('div');
+                widthDiv.className = 'col-md-4 mb-3';
+                widthDiv.innerHTML = `
+                    <div class="card">
+                        <div class="card-body">
+                            <label class="form-label fw-bold">Ширина Част ${i}:</label>
+                            <input type="number" name="part_${i}_width" class="form-control"
+                                   placeholder="мм" min="100" step="1" value="${existingWidth}" required>
+                        </div>
+                    </div>
+                `;
+                customWidthsList.appendChild(widthDiv);
+            }
+        }
+    }
+
+    // Автоматично изчисляване на брой делители
+    function updateMullionCount() {
+        const count = parseInt(partsCountSelect.value) || 1;
+        const hasMullions = hasMullionsCheckbox.checked;
+
+        if (hasMullions && count > 1) {
+            mullionCountInput.value = count - 1;
+        } else {
+            mullionCountInput.value = 0;
+        }
+    }
+
+    // Event listeners
+    partsCountSelect.addEventListener('change', function() {
+        existingConfig = [];
+        existingWidths = {};
+        generatePartsFields();
+        generateCustomWidthsFields();
+    });
+
+    hasMullionsCheckbox.addEventListener('change', updateMullionCount);
+
+    // Когато се променя "Равни части", показваме/скриваме полетата за размери
+    isEqualPartsCheckbox.addEventListener('change', function() {
+        existingWidths = {};
+        generateCustomWidthsFields();
+    });
+
+    // Инициализация при зареждане
+    generatePartsFields();
+    generateCustomWidthsFields();
+});
+</script>
+
+{% endblock %}

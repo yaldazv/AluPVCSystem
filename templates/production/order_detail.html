@@ -1,0 +1,170 @@
+{% load custom_filters %}
+
+{% extends 'base.html' %}
+
+{% block title %}Поръчка #{{ order.id }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>📦 Поръчка #{{ order.id }}</h1>
+        <div>
+            <a href="{% url 'production:order-list' %}" class="btn btn-secondary">← Всички поръчки</a>
+            <a href="{% url 'production:order-update' order.pk %}" class="btn btn-warning">✏️ Редактирай</a>
+            <a href="{% url 'production:order-delete' order.pk %}" class="btn btn-danger">🗑️ Изтрий</a>
+        </div>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="card mb-4 shadow">
+        <div class="card-header bg-info text-white">
+            <h4>👤 Информация за клиента</h4>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Клиент:</strong> {{ order.customer_name }}</p>
+                    <p><strong>Телефон:</strong> {{ order.customer_phone }}</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Адрес за монтаж:</strong> {{ order.delivery_address }}</p>
+                    <p><strong>Статус:</strong>
+                        <span class="badge {{ order.status|status_badge }}">
+                            {{ order.get_status_display }}
+                        </span>
+                    </p>
+                    <p><strong>Дата на създаване:</strong> {{ order.created_at|date:"d.m.Y H:i" }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="card mb-4 shadow">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h4>🪟 Прозорци и врати</h4>
+            <a href="{% url 'production:add-custom-product' order.pk %}" class="btn btn-light btn-sm">
+                ➕ Добави прозорец/врата
+            </a>
+        </div>
+        <div class="card-body">
+            {% if custom_products %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Тип</th>
+                                <th>Размери (мм)</th>
+                                <th>Категория</th>
+                                <th>Брой крила</th>
+                                <th>Делители</th>
+                                <th>Размер стъкло/крило (мм)</th>
+                                <th>Площ стъкло (м²)</th>
+                                <th>Тип отваряне</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for product in custom_products %}
+                                <tr>
+                                    <td>{{ product.get_product_type_display }}</td>
+                                    <td>{{ product.width|floatformat:0 }} × {{ product.height|floatformat:0 }}</td>
+                                    <td>{{ product.category.name }}</td>
+                                    <td>{{ product.sash_count }}</td>
+                                    <td>
+                                        {% if product.has_mullions %}
+                                            <span class="badge bg-info">{{ product.mullion_count }} дел.</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Без</span>
+                                        {% endif %}
+                                    </td>
+                                   <td>
+                                        {% if product.total_sashes > 1 %}
+                                            {% for detail in product.glass_details_list %}
+                                                <div class="mb-1">
+                                                    <strong>Крило {{ detail.position }}:</strong>
+                                                    <span class="text-primary">{{ detail.glass_width }}×{{ detail.glass_height }} мм</span>
+                                                    <span class="badge {% if detail.type == 'Отваряемо' %}bg-success{% else %}bg-secondary{% endif %}">
+                                                        {{ detail.type }}
+                                                    </span>
+                                                </div>
+                                            {% endfor %}
+                                        {% else %}
+                                            <strong class="text-primary">{{ product.glass_size_per_sash }}</strong>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ product.glass_area|floatformat:2 }}</td>
+                                    <td>
+                                        <small>{{ product.get_opening_type_display }}</small>
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'production:edit-custom-product' product.pk %}"
+                                           class="btn btn-sm btn-warning" title="Редактирай">✏️</a>
+                                        <a href="{% url 'production:delete-custom-product' product.pk %}"
+                                           class="btn btn-sm btn-danger" title="Изтрий">🗑️</a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-muted">Няма добавени прозорци или врати към тази поръчка.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Готови продукти (щори, гаражни врати) -->
+    <div class="card mb-4 shadow">
+        <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+            <h4>🚪 Готови продукти (Щори/Гаражни врати)</h4>
+            <a href="{% url 'production:add-ready-product' order.pk %}" class="btn btn-light btn-sm">
+                ➕ Добави готов продукт
+            </a>
+        </div>
+        <div class="card-body">
+            {% if ready_products %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Наименование</th>
+                                <th>Количество</th>
+                                <th>Цена за брой</th>
+                                <th>Обща цена</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for product in ready_products %}
+                                <tr>
+                                    <td>{{ product.name }}</td>
+                                    <td>{{ product.quantity }} бр.</td>
+                                    <td>{{ product.unit_price|currency }}</td>
+                                    <td><strong>{{ product.total_price|currency }}</strong></td>
+                                    <td>
+                                        <a href="{% url 'production:edit-ready-product' product.pk %}"
+                                           class="btn btn-sm btn-warning" title="Редактирай">✏️</a>
+                                        <a href="{% url 'production:delete-ready-product' product.pk %}"
+                                           class="btn btn-sm btn-danger" title="Изтрий">🗑️</a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-muted">Няма добавени готови продукти към тази поръчка.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

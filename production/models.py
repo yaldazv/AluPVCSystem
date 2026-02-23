@@ -1,37 +1,9 @@
 from django.db import models
 from django.core.validators import MinValueValidator, MinLengthValidator
 from django.core.exceptions import ValidationError
-from inventory.models import Material
+from inventory.models import Material, Category
 from .services import ProductionService
 
-
-class Category(models.Model):
-    name = models.CharField(
-        max_length=50,
-        verbose_name="Име на категория",
-        unique=True
-    )
-
-    system_offset = models.PositiveIntegerField(
-        default=50,
-        verbose_name="Технологичен офсет (мм)",
-        help_text="Разстоянието, с което профилът застъпва стъклото (стандартно 50мм)"
-    )
-
-    description = models.TextField(
-        blank=True,
-        verbose_name="Описание",
-        help_text="Специфични настройки или бележки за категорията"
-    )
-
-    def __str__(self):
-        # По-добре е да виждаш и офсета в името, когато избираш категория
-        return f"{self.name} ({self.system_offset}мм офсет)"
-
-    class Meta:
-        verbose_name = "Категория"
-        verbose_name_plural = "Категории"
-        ordering = ['name']
 
 class Order(models.Model):
     STATUS_CHOICES = [
@@ -75,7 +47,7 @@ class CustomProduct(models.Model):
         verbose_name="Поръчка"
     )
     category = models.ForeignKey(
-        Category,
+        'inventory.Category',
         on_delete=models.PROTECT,
         verbose_name="Вид профил (Категория)"
     )
@@ -115,7 +87,43 @@ class CustomProduct(models.Model):
         help_text="Как се отваря прозорецът/вратата"
     )
 
-    # Many-to-Many за консумативи (обков, дръжки, мрежи)
+    has_mullions = models.BooleanField(
+        default=False,
+        verbose_name="С делители",
+        help_text="Има ли делители (импости) в прозореца"
+    )
+
+    mullion_count = models.PositiveIntegerField(
+        default=0,
+        verbose_name="Брой делители",
+        help_text="Брой вертикални делители (за 2 части = 1 делител, за 3 части = 2 делителя)"
+    )
+
+    is_equal_parts = models.BooleanField(
+        default=True,
+        verbose_name="Равни части",
+        help_text="Дали частите са равни или неравни по ширина"
+    )
+    parts_count = models.PositiveIntegerField(
+        default=1,
+        verbose_name="Брой части",
+        help_text="На колко части е разделен прозорецът (1, 2, 3...)"
+    )
+
+    parts_config = models.JSONField(
+        default=list,
+        blank=True,
+        verbose_name="Конфигурация на частите",
+        help_text="Информация за всяка част - отваряема или фикс"
+    )
+
+    custom_widths = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name="Ръчни ширини",
+        help_text="Ширини за неравни части"
+    )
+
     materials = models.ManyToManyField(
         Material,
         blank=True,
@@ -123,11 +131,48 @@ class CustomProduct(models.Model):
         verbose_name="Вложени материали/Обков"
     )
 
+    total_sashes = models.PositiveIntegerField(
+        default=1,
+        verbose_name="Общ брой крила",
+        help_text="Колко крила има прозорецът (обикновено 1, 2 или 3)"
+    )
+
+    openable_sashes = models.PositiveIntegerField(
+        default=0,
+        verbose_name="Отваряеми крила",
+        help_text="Колко от крилата са отваряеми"
+    )
+
+    @property
+    def glass_dimensions_data(self):
+        """Връща пълни данни за размерите на стъклопакета"""
+        return ProductionService.calculate_glass_dimensions(self)
+
+
     @property
     def glass_area(self):
-        """Връща площта на стъклото за рязане"""
-        data = ProductionService.calculate_dimensions_and_areas(self)
-        return data['glass_area']
+        """Връща общата площ на стъклото за всички крила"""
+        data = self.glass_dimensions_data
+        return data['total_glass_area']
+
+
+    @property
+    def glass_details_list(self):
+        """Връща списък с детайли за всяко крило"""
+        data = self.glass_dimensions_data
+        return data['details']
+
+    @property
+    def glass_size_per_sash(self):
+        """Връща размера на стъклопакета като текст"""
+        data = self.glass_dimensions_data
+        return data['glass_dimensions']
+
+    @property
+    def sash_width(self):
+        """Връща ширината на едно крило"""
+        data = self.glass_dimensions_data
+        return data['sash_width']
 
     @property
     def total_materials_price(self):

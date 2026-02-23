@@ -1,0 +1,267 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ action|default:"Добавяне" }} на монтаж{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-calendar-event"></i> {{ action|default:"Добавяне" }} на монтаж</h2>
+        <a href="{% url 'scheduling:installation-list' %}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Назад
+        </a>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <form method="post" id="installationForm">
+                {% csrf_token %}
+                
+                {% if form.non_field_errors %}
+                <div class="alert alert-danger">
+                    {{ form.non_field_errors }}
+                </div>
+                {% endif %}
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.installation_date.id_for_label }}" class="form-label">
+                            {{ form.installation_date.label }} <span class="text-danger">*</span>
+                        </label>
+                        {{ form.installation_date }}
+                        {% if form.installation_date.errors %}
+                        <div class="text-danger">{{ form.installation_date.errors }}</div>
+                        {% endif %}
+                        {% if form.installation_date.help_text %}
+                        <small class="form-text text-muted">{{ form.installation_date.help_text }}</small>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.status.id_for_label }}" class="form-label">
+                            {{ form.status.label }}
+                        </label>
+                        {{ form.status }}
+                        {% if form.status.errors %}
+                        <div class="text-danger">{{ form.status.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Поръчки -->
+                <div class="mb-3">
+                    <label class="form-label">
+                        {{ form.orders.label }} <span class="text-danger">*</span>
+                    </label>
+                    {% if form.orders.help_text %}
+                    <small class="form-text text-muted d-block mb-2">{{ form.orders.help_text }}</small>
+                    {% endif %}
+
+                    <div class="border rounded p-3 bg-light" style="max-height: 300px; overflow-y: auto;">
+                        {% if form.orders.field.queryset.exists %}
+                            {% for choice in form.orders %}
+                                <div class="form-check mb-2">
+                                    {{ choice.tag }}
+                                    <label class="form-check-label" for="{{ choice.id_for_label }}"
+                                           data-order-id="{{ choice.choice_value }}">
+                                        <strong>{{ choice.choice_label }}</strong>
+                                    </label>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <p class="text-muted mb-0">
+                                Няма налични поръчки за монтаж.
+                                <a href="{% url 'production:order-list' %}">Създайте поръчка</a> или променете статуса на съществуваща.
+                            </p>
+                        {% endif %}
+                    </div>
+
+                    {% if form.orders.errors %}
+                    <div class="text-danger mt-1">{{ form.orders.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- Продукти за монтаж (динамично зареждане) -->
+                <div id="productsSection" class="mb-3" style="display:none;">
+                    <label class="form-label">
+                        <i class="bi bi-box-seam"></i> Продукти за монтаж
+                    </label>
+                    <div class="card">
+                        <div class="card-body">
+                            <div id="productsList">
+                                <!-- Продуктите ще се зареждат тук -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Адрес -->
+                <div class="mb-3">
+                    <label for="{{ form.address.id_for_label }}" class="form-label">
+                        {{ form.address.label }} <span class="text-danger">*</span>
+                    </label>
+                    {{ form.address }}
+                    {% if form.address.errors %}
+                    <div class="text-danger">{{ form.address.errors }}</div>
+                    {% endif %}
+                    {% if form.address.help_text %}
+                    <small class="form-text text-muted">{{ form.address.help_text }}</small>
+                    {% endif %}
+                </div>
+
+                <!-- Бележки -->
+                <div class="mb-3">
+                    <label for="{{ form.notes.id_for_label }}" class="form-label">
+                        {{ form.notes.label }}
+                    </label>
+                    {{ form.notes }}
+                    {% if form.notes.errors %}
+                    <div class="text-danger">{{ form.notes.errors }}</div>
+                    {% endif %}
+                    {% if form.notes.help_text %}
+                    <small class="form-text text-muted">{{ form.notes.help_text }}</small>
+                    {% endif %}
+                </div>
+
+                <div class="d-flex justify-content-end gap-2">
+                    <a href="{% url 'scheduling:installation-list' %}" class="btn btn-secondary">
+                        <i class="bi bi-x-circle"></i> Отказ
+                    </a>
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-check-circle"></i> Запази монтаж
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Създаваме mapping между Order ID и данни
+    const orderData = {};
+
+    // Зареждаме данните от поръчките
+    {% for order in form.orders.field.queryset %}
+        orderData[{{ order.pk }}] = {
+            address: "{{ order.delivery_address|escapejs }}",
+            client: "{{ order.customer_name|escapejs }}",
+            products: [
+                {% for product in order.products.all %}
+                {
+                    type: "{{ product.get_product_type_display|escapejs }}",
+                    category: "{{ product.category.name|escapejs }}",
+                    width: {{ product.width }},
+                    height: {{ product.height }},
+                    quantity: {{ product.quantity|default:1 }},
+                    parts: {{ product.parts_count|default:1 }},
+                },
+                {% endfor %}
+            ]
+        };
+    {% endfor %}
+
+    const orderCheckboxes = document.querySelectorAll('.order-checkbox');
+    const addressField = document.getElementById('id_address');
+    const productsSection = document.getElementById('productsSection');
+    const productsList = document.getElementById('productsList');
+
+    // Функция за актуализиране на адрес и продукти
+    function updateOrderDetails() {
+        const checkedCheckboxes = Array.from(orderCheckboxes).filter(cb => cb.checked);
+
+        if (checkedCheckboxes.length > 0) {
+            // Взимаме данните на първата избрана поръчка за адрес
+            const firstOrderId = checkedCheckboxes[0].value;
+            const firstOrderData = orderData[firstOrderId];
+
+            // Попълваме адреса ако е празен
+            if (firstOrderData && firstOrderData.address && !addressField.value) {
+                addressField.value = firstOrderData.address;
+            }
+
+            // Показваме продуктите от всички избрани поръчки
+            let productsHTML = '';
+            let totalProducts = 0;
+
+            checkedCheckboxes.forEach((checkbox, index) => {
+                const orderId = checkbox.value;
+                const data = orderData[orderId];
+
+                if (data && data.products.length > 0) {
+                    productsHTML += `
+                        <div class="mb-3 ${index > 0 ? 'mt-3 pt-3 border-top' : ''}">
+                            <h6 class="text-primary">
+                                <i class="bi bi-clipboard-check"></i> Поръчка: ${data.client}
+                            </h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-striped mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Тип</th>
+                                            <th>Категория</th>
+                                            <th>Размери</th>
+                                            <th>Части</th>
+                                            <th>Брой</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                    `;
+
+                    data.products.forEach(product => {
+                        productsHTML += `
+                            <tr>
+                                <td><span class="badge bg-info">${product.type}</span></td>
+                                <td>${product.category}</td>
+                                <td>${product.width} × ${product.height} мм</td>
+                                <td>${product.parts} ${product.parts === 1 ? 'част' : 'части'}</td>
+                                <td><strong>${product.quantity} бр.</strong></td>
+                            </tr>
+                        `;
+                        totalProducts += product.quantity;
+                    });
+
+                    productsHTML += `
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    `;
+                } else if (data) {
+                    productsHTML += `
+                        <div class="alert alert-warning mb-0">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            Поръчката от <strong>${data.client}</strong> няма добавени продукти.
+                        </div>
+                    `;
+                }
+            });
+
+            if (totalProducts > 0) {
+                productsHTML = `
+                    <div class="alert alert-info mb-3">
+                        <i class="bi bi-info-circle"></i>
+                        Общо <strong>${totalProducts}</strong> продукт${totalProducts === 1 ? '' : 'а'} за монтаж от ${checkedCheckboxes.length} поръчк${checkedCheckboxes.length === 1 ? 'а' : 'и'}
+                    </div>
+                ` + productsHTML;
+            }
+
+            productsList.innerHTML = productsHTML || '<p class="text-muted mb-0">Няма продукти за показване</p>';
+            productsSection.style.display = 'block';
+        } else {
+            // Скриваме секцията ако няма избрани поръчки
+            productsSection.style.display = 'none';
+            productsList.innerHTML = '';
+        }
+    }
+
+    // Добавяме event listener на всички checkbox-ове
+    orderCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateOrderDetails);
+    });
+
+    // Инициализация при зареждане (ако има предварително избрани поръчки)
+    updateOrderDetails();
+});
+</script>
+
+{% endblock %}

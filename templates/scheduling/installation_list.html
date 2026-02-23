@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+
+{% block title %}Монтажи{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-calendar-event"></i> График за монтажи</h2>
+        <a href="{% url 'scheduling:installation-create' %}" class="btn btn-success">
+            <i class="bi bi-plus-circle"></i> Нов монтаж
+        </a>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-body p-2">
+            <ul class="nav nav-pills justify-content-center">
+                <li class="nav-item">
+                    <a class="nav-link {% if active_tab == 'past' %}active{% endif %}"
+                       href="?tab=past"
+                       style="{% if active_tab == 'past' %}background-color: #6c757d; color: white;{% else %}color: #2c3e50;{% endif %}">
+                        <i class="bi bi-clock-history"></i> Минали
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if active_tab == 'today' %}active{% endif %}"
+                       href="?tab=today"
+                       style="{% if active_tab == 'today' %}background-color: #27ae60; color: white;{% else %}color: #2c3e50;{% endif %}">
+                        <i class="bi bi-calendar-check"></i> Днес
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if active_tab == 'upcoming' %}active{% endif %}"
+                       href="?tab=upcoming"
+                       style="{% if active_tab == 'upcoming' %}background-color: #3498db; color: white;{% else %}color: #2c3e50;{% endif %}">
+                        <i class="bi bi-calendar3"></i> Предстоящи
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Списък с монтажи -->
+    {% if installations %}
+        <div class="row">
+            {% for installation in installations %}
+            <div class="col-md-6 mb-4">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-header" style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-bottom: 2px solid #dee2e6;">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span style="color: #2c3e50; font-weight: 600;">
+                                <i class="bi bi-calendar-date"></i> {{ installation.installation_date|date:"d.m.Y (l)" }}
+                            </span>
+                            <span class="badge
+                                {% if installation.status == 'scheduled' %}bg-primary
+                                {% elif installation.status == 'in_progress' %}bg-warning text-dark
+                                {% elif installation.status == 'completed' %}bg-success
+                                {% else %}bg-secondary{% endif %}">
+                                {{ installation.get_status_display }}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title" style="color: #2c3e50;">
+                            <i class="bi bi-geo-alt-fill text-danger"></i> {{ installation.address|truncatewords:8 }}
+                        </h5>
+
+                        <div class="mb-3">
+                            <strong style="color: #2c3e50;"><i class="bi bi-clipboard-check"></i> Поръчки:</strong><br>
+                            <div class="mt-2">
+                                {% for order in installation.orders.all %}
+                                    <span class="badge bg-info mb-1">
+                                        <i class="bi bi-person"></i> {{ order.customer_name }}
+                                    </span>
+                                {% empty %}
+                                    <span class="text-muted">Няма добавени поръчки</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        {% if installation.notes %}
+                        <div class="alert alert-light mb-0" style="border-left: 3px solid #3498db;">
+                            <small style="color: #2c3e50;">
+                                <i class="bi bi-info-circle"></i> {{ installation.notes|truncatewords:15 }}
+                            </small>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="card-footer bg-white border-top" style="border-color: #dee2e6 !important;">
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="{% url 'scheduling:installation-detail' installation.pk %}"
+                               class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-eye"></i> Детайли
+                            </a>
+                            <a href="{% url 'scheduling:installation-update' installation.pk %}"
+                               class="btn btn-sm btn-outline-warning">
+                                <i class="bi bi-pencil"></i> Редактирай
+                            </a>
+                            <a href="{% url 'scheduling:installation-delete-confirm' installation.pk %}"
+                               class="btn btn-sm btn-outline-danger">
+                                <i class="bi bi-trash"></i> Изтрий
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="card shadow-sm">
+            <div class="card-body text-center py-5">
+                <i class="bi bi-calendar-x" style="font-size: 3rem; color: #95a5a6;"></i>
+                <h5 class="mt-3" style="color: #2c3e50;">
+                    {% if active_tab == 'past' %}
+                        Няма минали монтажи
+                    {% elif active_tab == 'today' %}
+                        Няма монтажи за днес
+                    {% else %}
+                        Няма предстоящи монтажи
+                    {% endif %}
+                </h5>
+                <p class="text-muted">Кликнете "Нов монтаж" за да добавите монтаж</p>
+                <a href="{% url 'scheduling:installation-create' %}" class="btn btn-primary mt-3">
+                    <i class="bi bi-plus-circle"></i> Добави първи монтаж
+                </a>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

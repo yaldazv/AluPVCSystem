@@ -1,18 +1,11 @@
-# Виртуална среда
-venv/
-ENV/
-env/
-
-# Python кеш файлове
+﻿*.pyc
 __pycache__/
-*.py[cod]
-*$py.class
-
-
-# Django секрети
+*.sqlite3
 .env
-local_settings.py
-
-# Системни файлове
-.DS_Store
-Thumbs.db
+venv/
+staticfiles/
+media/
+.idea/
+.vscode/
+*.log
+db.sqlite3

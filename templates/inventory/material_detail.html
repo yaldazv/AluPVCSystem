@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ material.name }} - AluPVC System{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h3>{{ material.name }}</h3>
+                <div>
+                    <a href="{% url 'material_update' material.pk %}" class="btn btn-warning">✏️ Редактирай</a>
+                    <a href="{% url 'material_delete' material.pk %}" class="btn btn-danger">🗑️ Изтрий</a>
+                </div>
+            </div>
+            <div class="card-body">
+                <table class="table">
+                    <tr>
+                        <th>ID:</th>
+                        <td>{{ material.id }}</td>
+                    </tr>
+                    <tr>
+                        <th>Име:</th>
+                        <td>{{ material.name }}</td>
+                    </tr>
+                    <tr>
+                        <th>Тип материал:</th>
+                        <td>{{ material.get_material_type_display }}</td>
+                    </tr>
+                    <tr>
+                        <th>Категории:</th>
+                        <td>
+                            {% for cat in material.categories.all %}
+                                <span class="badge bg-secondary">{{ cat.name }}</span>
+                            {% empty %}
+                                <span class="text-muted">Няма</span>
+                            {% endfor %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Марка:</th>
+                        <td>{{ material.brand|default:"Не е посочена" }}</td>
+                    </tr>
+                    <tr>
+                        <th>Серия:</th>
+                        <td>{{ material.series|default:"Не е посочена" }}</td>
+                    </tr>
+                    {% if material.profile_type %}
+                    <tr>
+                        <th>Тип профил:</th>
+                        <td>{{ material.get_profile_type_display }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if material.color %}
+                    <tr>
+                        <th>Цвят:</th>
+                        <td>{{ material.color }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if material.bar_length %}
+                    <tr>
+                        <th>Дължина на прът:</th>
+                        <td>{{ material.bar_length }} мм</td>
+                    </tr>
+                    {% endif %}
+                    {% if material.chamber_count %}
+                    <tr>
+                        <th>Брой камери:</th>
+                        <td>{{ material.chamber_count }}</td>
+                    </tr>
+                    {% endif %}
+                    <tr>
+                        <th>Наличност:</th>
+                        <td class="{% if material.quantity_in_stock == 0 %}text-danger fw-bold{% endif %}">
+                            {{ material.quantity_in_stock }} {{ material.unit }}
+                            {% if material.quantity_in_stock == 0 %}
+                                <span class="badge bg-danger">Няма наличност</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                </table>
+
+                <a href="{% url 'material_list' %}" class="btn btn-secondary">← Назад към списъка</a>
+            </div>
+        </div>
+
+        <!-- История на доставките -->
+        <div class="card">
+            <div class="card-header">
+                <h4>📦 История на доставките</h4>
+            </div>
+            <div class="card-body">
+                {% if deliveries %}
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Дата</th>
+                                <th>Доставчик</th>
+                                <th>Количество</th>
+                                <th>Цена</th>
+                                <th>Обща сума</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for delivery in deliveries %}
+                            <tr>
+                                <td>{{ delivery.delivery_date|date:"d.m.Y" }}</td>
+                                <td>{{ delivery.supplier.name }}</td>
+                                <td>{{ delivery.quantity }} {{ material.unit }}</td>
+                                <td>{{ delivery.price_per_unit|floatformat:2 }} лв</td>
+                                <td>{{ delivery.total_price|floatformat:2 }} лв</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    <small class="text-muted">Показани са последните 10 доставки</small>
+                {% else %}
+                    <p class="text-muted">Все още няма регистрирани доставки за този материал.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

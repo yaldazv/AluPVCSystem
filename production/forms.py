@@ -1,7 +1,7 @@
 from django import forms
 from django.core.exceptions import ValidationError
-from .models import Order, CustomProduct, ReadyProduct, Category
-from inventory.models import Material
+from .models import Order, CustomProduct, ReadyProduct
+from inventory.models import Material, Category
 import re
 
 
@@ -106,28 +106,22 @@ class OrderUpdateForm(OrderForm):
 
 
 class CustomProductForm(forms.ModelForm):
-    """
-    Форма за добавяне на прозорци/врати към поръчка.
-    Включва validation за размери и филтриране на материали по категория.
-    """
 
     class Meta:
         model = CustomProduct
         fields = [
-            'order',
             'category',
             'product_type',
             'width',
             'height',
-            'sash_count',
-            'opening_type',
+            'parts_count',
+            'has_mullions',
+            'mullion_count',
+            'is_equal_parts',
             'materials',
         ]
 
         widgets = {
-            'order': forms.Select(attrs={
-                'class': 'form-select',
-            }),
             'category': forms.Select(attrs={
                 'class': 'form-select',
             }),
@@ -146,53 +140,66 @@ class CustomProductForm(forms.ModelForm):
                 'min': '200',
                 'step': '1',
             }),
-            'sash_count': forms.NumberInput(attrs={
-                'class': 'form-control',
-                'min': '1',
-                'max': '10',
-            }),
-            'opening_type': forms.Select(attrs={
+            'parts_count': forms.Select(attrs={
                 'class': 'form-select',
+                'id': 'id_parts_count',
+            }, choices=[(i, f'{i} {"част" if i == 1 else "части"}') for i in range(1, 6)]),
+            'has_mullions': forms.CheckboxInput(attrs={
+                'class': 'form-check-input',
+                'id': 'id_has_mullions',
             }),
-            'materials': forms.CheckboxSelectMultiple(),
+            'mullion_count': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': '0',
+                'max': '5',
+                'readonly': True,
+            }),
+            'is_equal_parts': forms.CheckboxInput(attrs={
+                'class': 'form-check-input',
+                'checked': True,
+                'id': 'id_is_equal_parts',
+            }),
+            'materials': forms.CheckboxSelectMultiple(attrs={
+                'class': 'form-check-input',
+            }),
         }
 
         labels = {
-            'order': 'Поръчка',
             'category': 'Категория (PVC/Алуминий)',
             'product_type': 'Тип продукт',
             'width': 'Ширина (мм)',
             'height': 'Височина (мм)',
-            'sash_count': 'Брой крила',
-            'opening_type': 'Тип отваряне',
+            'parts_count': 'Разделяне на',
+            'has_mullions': 'С делители',
+            'mullion_count': 'Брой делители',
+            'is_equal_parts': 'Равни части',
             'materials': 'Допълнителни материали/обков',
         }
 
         help_texts = {
-            'width': 'Минимална ширина: 200мм',
-            'height': 'Минимална височина: 200мм',
-            'sash_count': 'Колко крила има прозорецът/вратата',
+            'parts_count': 'На колко части е разделен прозорецът',
+            'has_mullions': 'Има ли делители (импости) в прозореца',
+            'mullion_count': 'Брой вертикални делители (автоматично: части - 1)',
+            'is_equal_parts': 'Дали частите са равни по ширина',
             'materials': 'Изберете обков, дръжки и други материали',
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Филтрира материалите - показва само релевантните за избраната категория
-        if 'category' in self.data:
-            try:
-                category_id = int(self.data.get('category'))
-                self.fields['materials'].queryset = Material.objects.filter(
-                    categories__id=category_id
-                )
-            except (ValueError, TypeError):
-                pass
-        elif self.instance.pk and self.instance.category:
-            self.fields['materials'].queryset = Material.objects.filter(
-                categories=self.instance.category
-            )
+
+        # Филтрира материалите - предпочитание към обков/аксесоари
+        hardware_materials = Material.objects.filter(
+            material_type__in=['hardware', 'accessory']
+        ).order_by('name')
+
+        if hardware_materials.exists():
+            self.fields['materials'].queryset = hardware_materials
+        else:
+            # Ако няма обков/аксесоари, показва всички материали
+            self.fields['materials'].queryset = Material.objects.all().order_by('name')
+            self.fields['materials'].help_text = 'Няма налични материали от тип "Обков" или "Аксесоар". Показани са всички материали.'
 
     def clean_width(self):
-        """Валидация за ширина - минимум 200мм, максимум 3000мм"""
         width = self.cleaned_data.get('width')
         if width < 200:
             raise ValidationError('Ширината не може да е по-малка от 200мм!')
@@ -201,7 +208,6 @@ class CustomProductForm(forms.ModelForm):
         return width
 
     def clean_height(self):
-        """Валидация за височина - минимум 200мм, максимум 3000мм"""
         height = self.cleaned_data.get('height')
         if height < 200:
             raise ValidationError('Височината не може да е по-малка от 200мм!')
@@ -210,44 +216,44 @@ class CustomProductForm(forms.ModelForm):
         return height
 
     def clean(self):
-        """Cross-field validation за размери и тип"""
+        #Cross-field validation за размери и тип
         cleaned_data = super().clean()
         width = cleaned_data.get('width')
         height = cleaned_data.get('height')
         product_type = cleaned_data.get('product_type')
-        sash_count = cleaned_data.get('sash_count')
+        parts_count = cleaned_data.get('parts_count', 1)
+        has_mullions = cleaned_data.get('has_mullions', False)
 
         # За врати, височината трябва да е по-голяма от ширината
         if product_type == 'door' and width and height:
             if width > height:
                 self.add_error('height', 'За врати височината трябва да е по-голяма от ширината!')
 
-        # Ако има повече от 1 крило, ширината трябва да е поне 600мм
-        if sash_count and sash_count > 1 and width:
+        # Ако има повече от 1 част, ширината трябва да е поне 600мм
+        if parts_count > 1 and width:
             if width < 600:
-                self.add_error('width', f'За {sash_count} крила ширината трябва да е минимум 600мм!')
+                self.add_error('width', f'За {parts_count} части ширината трябва да е минимум 600мм!')
+
+        # Автоматично изчисляване на брой делители
+        if has_mullions and parts_count > 1:
+            cleaned_data['mullion_count'] = parts_count - 1
+        else:
+            cleaned_data['mullion_count'] = 0
 
         return cleaned_data
 
 
 class ReadyProductForm(forms.ModelForm):
-    """
-    Форма за добавяне на готови продукти (щори, гаражни врати).
-    """
 
     class Meta:
         model = ReadyProduct
         fields = [
-            'order',
             'name',
             'quantity',
             'unit_price',
         ]
 
         widgets = {
-            'order': forms.Select(attrs={
-                'class': 'form-select',
-            }),
             'name': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': 'Например: Щора externa 200x200, Гаражна врата 240x210',
@@ -264,7 +270,6 @@ class ReadyProductForm(forms.ModelForm):
         }
 
         labels = {
-            'order': 'Поръчка',
             'name': 'Наименование на продукта',
             'quantity': 'Количество',
             'unit_price': 'Цена за единица',
@@ -276,21 +281,18 @@ class ReadyProductForm(forms.ModelForm):
         }
 
     def clean_name(self):
-        """Валидация за име - минимум 5 символа"""
         name = self.cleaned_data.get('name')
         if len(name) < 5:
             raise ValidationError('Наименованието трябва да е поне 5 символа!')
         return name.strip()
 
     def clean_quantity(self):
-        """Валидация за количество - минимум 1"""
         quantity = self.cleaned_data.get('quantity')
         if quantity < 1:
             raise ValidationError('Количеството трябва да е поне 1!')
         return quantity
 
     def clean_unit_price(self):
-        """Валидация за цена - трябва да е положително число"""
         price = self.cleaned_data.get('unit_price')
         if price <= 0:
             raise ValidationError('Цената трябва да е по-голяма от нула!')

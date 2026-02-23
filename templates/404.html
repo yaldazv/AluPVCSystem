@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+
+{% block title %}Страницата не е намерена - 404{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center mt-5">
+        <div class="col-md-8 text-center">
+            <div class="card shadow-lg">
+                <div class="card-body py-5">
+                    <i class="bi bi-exclamation-triangle-fill text-warning" style="font-size: 6rem;"></i>
+                    <h1 class="display-1 fw-bold text-primary mt-3">404</h1>
+                    <h2 class="mb-4" style="color: #2c3e50;">Страницата не е намерена</h2>
+                    <p class="lead text-muted mb-4">
+                        Съжаляваме, но страницата която търсите не съществува или е била премахната.
+                    </p>
+
+                    <div class="mt-4">
+                        <a href="{% url 'home' %}" class="btn btn-primary btn-lg me-2">
+                            <i class="bi bi-house-door"></i> Начална страница
+                        </a>
+                        <a href="{% url 'production:order-list' %}" class="btn btn-outline-secondary btn-lg">
+                            <i class="bi bi-clipboard-check"></i> Поръчки
+                        </a>
+                    </div>
+
+                    <div class="mt-5">
+                        <p class="text-muted">
+                            Или използвайте навигационното меню за да се върнете към другите секции:
+                        </p>
+                        <div class="d-flex justify-content-center gap-3 mt-3">
+                            <a href="{% url 'material_list' %}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-box-seam"></i> Материали
+                            </a>
+                            <a href="{% url 'scheduling:installation-list' %}" class="btn btn-sm btn-outline-info">
+                                <i class="bi bi-calendar-event"></i> Монтажи
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

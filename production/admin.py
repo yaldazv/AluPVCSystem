@@ -1,11 +1,5 @@
 from django.contrib import admin
-from .models import Category, Order, CustomProduct, ReadyProduct
-
-
-@admin.register(Category)
-class CategoryAdmin(admin.ModelAdmin):
-    list_display = ['name', 'system_offset']
-    search_fields = ['name']
+from .models import Order, CustomProduct, ReadyProduct
 
 
 @admin.register(Order)

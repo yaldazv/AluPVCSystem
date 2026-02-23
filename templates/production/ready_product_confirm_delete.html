@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+
+{% block title %}Изтриване на готов продукт{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h3>⚠️ Потвърждение за изтриване</h3>
+                </div>
+                <div class="card-body">
+                    <p class="lead">Сигурни ли сте, че искате да изтриете този готов продукт?</p>
+
+                    <div class="alert alert-warning">
+                        <strong>{{ product.name }}</strong><br>
+                        <strong>Количество:</strong> {{ product.quantity }} бр.<br>
+                        <strong>Цена за брой:</strong> {{ product.unit_price }} лв.<br>
+                        <strong>Обща цена:</strong> {{ product.total_price }} лв.
+                    </div>
+
+                    <div class="alert alert-info">
+                        <strong>Поръчка:</strong> #{{ order.id }} - {{ order.customer_name }}
+                    </div>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{% url 'production:order-detail' order.pk %}" class="btn btn-secondary">
+                                ← Отказ
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                🗑️ Да, изтрий продукта
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

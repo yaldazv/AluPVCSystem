@@ -10,27 +10,50 @@ def validate_not_past(value):
 
 
 class Installation(models.Model):
-    # One-to-One: Всеки монтаж е точно за една поръчка
-    order = models.OneToOneField(
-        Order,
-        on_delete=models.CASCADE,
-        primary_key=True,
-        verbose_name="Поръчка"
-    )
-    scheduled_date = models.DateField(
+    STATUS_CHOICES = [
+        ('scheduled', 'Планиран'),
+        ('in_progress', 'В процес'),
+        ('completed', 'Завършен'),
+        ('cancelled', 'Отменен'),
+    ]
+
+    installation_date = models.DateField(
         validators=[validate_not_past],
-        verbose_name="Планирана дата",
+        verbose_name="Дата на монтаж",
         help_text="Дата за монтаж"
     )
+
+    orders = models.ManyToManyField(
+        Order,
+        verbose_name="Поръчки",
+        related_name='installations',
+        help_text="Поръчки, които ще се монтират на тази дата"
+    )
+
+    address = models.CharField(
+        max_length=500,
+        verbose_name="Адрес на монтаж",
+        help_text="Пълен адрес където ще се извърши монтажът"
+    )
+
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='scheduled',
+        verbose_name="Статус"
+    )
+
     notes = models.TextField(
         blank=True,
-        verbose_name="Бележки"
+        verbose_name="Бележки",
+        help_text="Допълнителни бележки за монтажа"
     )
 
     def __str__(self):
-        return f"Монтаж на {self.scheduled_date} за {self.order.customer_name}"
+        order_count = self.orders.count()
+        return f"Монтаж на {self.installation_date} ({order_count} поръчки)"
 
     class Meta:
         verbose_name = "Монтаж"
         verbose_name_plural = "Монтажи"
-        ordering = ['scheduled_date']
+        ordering = ['installation_date']

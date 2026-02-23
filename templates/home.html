@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+
+{% block title %}Начало - AluPVC System{% endblock %}
+
+{% block content %}
+<div class="hero-section text-center fade-in">
+    <div class="container">
+        <h1 class="display-4 fw-bold mb-3">
+            <i class="bi bi-building"></i> Добре дошли в AluPVC System
+        </h1>
+        <p class="lead">Професионална система за управление на цех за алуминиева и PVC дограма</p>
+    </div>
+</div>
+
+<div class="row g-4 fade-in">
+    <div class="col-md-4">
+        <div class="card feature-card h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-box-seam feature-icon text-primary"></i>
+                <h4 class="card-title gradient-text">Материали</h4>
+                <p class="card-text text-muted">Управление на складови наличности и материали</p>
+                <a href="{% url 'material_list' %}" class="btn btn-primary mt-3">
+                    <i class="bi bi-arrow-right-circle"></i> Виж материали
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card feature-card h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-clipboard-check feature-icon text-success"></i>
+                <h4 class="card-title gradient-text">Поръчки</h4>
+                <p class="card-text text-muted">Създаване и проследяване на поръчки и продукти</p>
+                <a href="{% url 'production:order-list' %}" class="btn btn-success mt-3">
+                    <i class="bi bi-arrow-right-circle"></i> Виж поръчки
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card feature-card h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-calendar-event feature-icon text-info"></i>
+                <h4 class="card-title gradient-text">Монтажи</h4>
+                <p class="card-text text-muted">Планиране и организация на монтажи</p>
+                <a href="{% url 'scheduling:installation-list' %}" class="btn btn-info mt-3">
+                    <i class="bi bi-arrow-right-circle"></i> Виж монтажи
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-5 g-4 fade-in">
+    <div class="col-md-4">
+        <div class="card shadow-md-custom">
+            <div class="card-body text-center">
+                <i class="bi bi-truck fs-1 text-primary mb-3"></i>
+                <h5>Бързи доставки</h5>
+                <p class="text-muted">Проследяване на доставки в реално време</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-md-custom">
+            <div class="card-body text-center">
+                <i class="bi bi-graph-up fs-1 text-success mb-3"></i>
+                <h5>Анализи</h5>
+                <p class="text-muted">Детайлна статистика и отчети</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-md-custom">
+            <div class="card-body text-center">
+                <i class="bi bi-shield-check fs-1 text-info mb-3"></i>
+                <h5>Сигурност</h5>
+                <p class="text-muted">Защита на данните и контрол на достъпа</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

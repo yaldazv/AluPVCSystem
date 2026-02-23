@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+
+{% block title %}Изтриване на поръчка #{{ order.id }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h3>⚠️ Потвърждение за изтриване</h3>
+                </div>
+                <div class="card-body">
+                    <p class="lead">Сигурни ли сте, че искате да изтриете тази поръчка?</p>
+                    
+                    <div class="alert alert-warning">
+                        <strong>📋 Поръчка #{{ order.id }}</strong><br>
+                        <strong>Клиент:</strong> {{ order.customer_name }}<br>
+                        <strong>Телефон:</strong> {{ order.customer_phone }}<br>
+                        <strong>Адрес:</strong> {{ order.delivery_address }}<br>
+                        <strong>Статус:</strong> {{ order.get_status_display }}
+                    </div>
+
+                    <div class="alert alert-danger">
+                        <strong>⚠️ Внимание!</strong> Това действие е необратимо и ще изтрие:
+                        <ul>
+                            <li>Всички прозорци и врати в тази поръчка</li>
+                            <li>Всички готови продукти (щори, гаражни врати)</li>
+                            <li>Свързаните монтажи (ако има)</li>
+                        </ul>
+                    </div>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{% url 'production:order-detail' order.pk %}" class="btn btn-secondary">
+                                ← Отказ
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                🗑️ Да, изтрий поръчката
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

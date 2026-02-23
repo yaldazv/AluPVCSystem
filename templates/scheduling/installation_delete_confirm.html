@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+
+{% block title %}Изтриване на монтаж{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-exclamation-triangle"></i> Потвърждение за изтриване
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <p class="lead">Сигурни ли сте, че искате да изтриете този монтаж?</p>
+                    
+                    <div class="alert alert-warning">
+                        <strong>Внимание:</strong> Това действие не може да бъде отменено!
+                    </div>
+
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <h5>Детайли на монтажа:</h5>
+                            <table class="table table-borderless mb-0">
+                                <tr>
+                                    <th width="30%">Дата на монтаж:</th>
+                                    <td>{{ installation.installation_date|date:"d.m.Y" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Адрес:</th>
+                                    <td>{{ installation.address }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Статус:</th>
+                                    <td>
+                                        <span class="badge bg-info">{{ installation.get_status_display }}</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Поръчки:</th>
+                                    <td>
+                                        {% for order in installation.orders.all %}
+                                            <span class="badge bg-primary">{{ order.client_name }}</span>
+                                        {% empty %}
+                                            <span class="text-muted">Няма поръчки</span>
+                                        {% endfor %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <form method="post" action="{% url 'scheduling:installation-delete' installation.pk %}" class="d-inline">
+                        {% csrf_token %}
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="{% url 'scheduling:installation-detail' installation.pk %}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> Отказ
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash"></i> Да, изтрий
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

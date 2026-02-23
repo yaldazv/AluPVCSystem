@@ -1,0 +1,323 @@
+/*
+ * AluPVC System - Основни стилове
+ * Система за управление на цех за дограма
+ */
+
+/* ========== ОСНОВНИ СТИЛОВЕ ========== */
+:root {
+    --primary-color: #2c3e50;
+    --secondary-color: #34495e;
+    --success-color: #27ae60;
+    --danger-color: #c0392b;
+    --warning-color: #f39c12;
+    --info-color: #3498db;
+    --dark-color: #1a252f;
+    --light-bg: #f8f9fa;
+    --border-color: #e0e0e0;
+    --text-muted: #6c757d;
+}
+
+html, body {
+    height: 100%;
+    margin: 0;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f5f7fa;
+    color: #2c3e50;
+}
+
+/* ========== НАВИГАЦИЯ ========== */
+.navbar {
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%) !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.navbar-brand {
+    font-weight: 600;
+    font-size: 1.3rem;
+    color: #fff !important;
+}
+
+.navbar-brand:hover {
+    color: #3498db !important;
+    transition: color 0.3s;
+}
+
+.nav-link {
+    color: rgba(255,255,255,0.9) !important;
+    font-weight: 500;
+    transition: color 0.3s;
+}
+
+.nav-link:hover {
+    color: #3498db !important;
+}
+
+/* ========== MAIN CONTENT ========== */
+main {
+    flex: 1 0 auto;
+    min-height: calc(100vh - 200px);
+}
+
+/* ========== FOOTER ========== */
+footer {
+    flex-shrink: 0;
+    margin-top: auto;
+    background: linear-gradient(135deg, #1a252f 0%, #2c3e50 100%);
+    box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
+}
+
+footer p {
+    margin: 0;
+    padding: 0.3rem 0;
+    color: rgba(255,255,255,0.8);
+}
+
+footer h5 {
+    color: #fff;
+    font-size: 1.1rem;
+}
+
+/* ========== КАРТИ ========== */
+.card {
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    transition: transform 0.3s, box-shadow 0.3s;
+    background: white;
+}
+
+.card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+}
+
+.card-header {
+    background: #f8f9fa;
+    color: #2c3e50;
+    border-bottom: 2px solid #e9ecef;
+    font-weight: 600;
+}
+
+/* ========== БУТОНИ ========== */
+.btn {
+    border-radius: 6px;
+    padding: 0.5rem 1.2rem;
+    font-weight: 500;
+    transition: all 0.2s;
+    border: none;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+
+.btn-primary {
+    background-color: #3498db;
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: #2980b9;
+}
+
+.btn-success {
+    background-color: #27ae60;
+    color: white;
+}
+
+.btn-success:hover {
+    background-color: #229954;
+}
+
+.btn-danger {
+    background-color: #c0392b;
+    color: white;
+}
+
+.btn-danger:hover {
+    background-color: #a93226;
+}
+
+.btn-warning {
+    background-color: #f39c12;
+    color: white;
+}
+
+.btn-warning:hover {
+    background-color: #e67e22;
+}
+
+.btn-info {
+    background-color: #3498db;
+    color: white;
+}
+
+.btn-info:hover {
+    background-color: #2980b9;
+}
+
+.btn-secondary {
+    background-color: #95a5a6;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background-color: #7f8c8d;
+}
+
+/* ========== ФОРМИ ========== */
+.form-control, .form-select {
+    border-radius: 6px;
+    border: 1px solid #dce0e5;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    padding: 0.5rem 0.75rem;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #3498db;
+    box-shadow: 0 0 0 0.15rem rgba(52, 152, 219, 0.15);
+}
+
+.form-label {
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 0.4rem;
+}
+
+/* ========== ALERTS ========== */
+.alert {
+    border-radius: 6px;
+    border: none;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+/* ========== ТАБЛИЦИ ========== */
+.table {
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.table thead th {
+    background-color: #f8f9fa;
+    color: #2c3e50;
+    border-bottom: 2px solid #dee2e6;
+    font-weight: 600;
+}
+
+.table-striped tbody tr:nth-of-type(odd) {
+    background-color: #f8f9fa;
+}
+
+/* ========== BADGES ========== */
+.badge {
+    padding: 0.4em 0.8em;
+    border-radius: 12px;
+    font-weight: 500;
+}
+
+/* ========== НАЧАЛНА СТРАНИЦА ========== */
+.hero-section {
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+    color: white;
+    padding: 3rem 0;
+    border-radius: 10px;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.feature-card {
+    text-align: center;
+    padding: 2rem;
+    height: 100%;
+    transition: all 0.3s;
+}
+
+.feature-card:hover {
+    transform: translateY(-5px);
+}
+
+.feature-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    display: block;
+}
+
+.gradient-text {
+    color: #2c3e50;
+    font-weight: 600;
+}
+
+/* ========== RESPONSIVE ========== */
+@media (max-width: 768px) {
+    .navbar-brand {
+        font-size: 1.1rem;
+    }
+
+    .hero-section {
+        padding: 2rem 0;
+    }
+
+    .feature-card {
+        margin-bottom: 1rem;
+    }
+}
+
+/* ========== АНИМАЦИИ ========== */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in {
+    animation: fadeIn 0.4s ease-in;
+}
+
+/* ========== UTILITY CLASSES ========== */
+.shadow-sm-custom {
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.shadow-md-custom {
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+
+.shadow-lg-custom {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+/* ========== DROPDOWN ========== */
+.dropdown-menu {
+    border: 1px solid #e9ecef;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border-radius: 6px;
+}
+
+.dropdown-item {
+    color: #2c3e50;
+    transition: background-color 0.2s;
+}
+
+.dropdown-item:hover {
+    background-color: #f8f9fa;
+    color: #3498db;
+}
+
+/* ========== ICONS ========== */
+.bi {
+    vertical-align: middle;
+}
+

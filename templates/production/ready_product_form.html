@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white">
+                    <h3>{{ title }} - Поръчка #{{ order.id }}</h3>
+                    <small>Клиент: {{ order.customer_name }}</small>
+                </div>
+                <div class="card-body">
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                {{ form.non_field_errors }}
+                            </div>
+                        {% endif %}
+
+                        <div class="mb-3">
+                            <label for="{{ form.name.id_for_label }}" class="form-label">
+                                {{ form.name.label }}
+                                <span class="text-danger">*</span>
+                            </label>
+                            {{ form.name }}
+                            {% if form.name.help_text %}
+                                <small class="form-text text-muted">{{ form.name.help_text }}</small>
+                            {% endif %}
+                            {% if form.name.errors %}
+                                <div class="text-danger">{{ form.name.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.quantity.id_for_label }}" class="form-label">
+                                        {{ form.quantity.label }}
+                                        <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.quantity }}
+                                    {% if form.quantity.help_text %}
+                                        <small class="form-text text-muted">{{ form.quantity.help_text }}</small>
+                                    {% endif %}
+                                    {% if form.quantity.errors %}
+                                        <div class="text-danger">{{ form.quantity.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.unit_price.id_for_label }}" class="form-label">
+                                        {{ form.unit_price.label }}
+                                        <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.unit_price }}
+                                    {% if form.unit_price.help_text %}
+                                        <small class="form-text text-muted">{{ form.unit_price.help_text }}</small>
+                                    {% endif %}
+                                    {% if form.unit_price.errors %}
+                                        <div class="text-danger">{{ form.unit_price.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <strong>ℹ️ Информация:</strong> Това са готови продукти като щори, гаражни врати и др., които се поръчват и монтират директно.
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{% url 'production:order-detail' order.pk %}" class="btn btn-secondary">
+                                ← Назад към поръчката
+                            </a>
+                            <button type="submit" class="btn btn-success">
+                                💾 Запази продукт
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

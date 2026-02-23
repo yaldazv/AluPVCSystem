@@ -1,20 +1,437 @@
-# AluPVC Systems - ERP  за дограма и врати
+# 🏭 AluPVC System - Управление на цех за дограма
 
-## Описание
-Проектът е уеб-базирана система за управление на производство и монтаж на:
-- Алуминиева и ПВЦ дограма(собствено производство)
-- Гаражни врати, щори и огради (готови продукти)
+![Django](https://img.shields.io/badge/Django-6.0.2-green.svg)
+![Python](https://img.shields.io/badge/Python-3.12-blue.svg)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Latest-blue.svg)
+![Bootstrap](https://img.shields.io/badge/Bootstrap-5.3-purple.svg)
 
+## 📋 Описание на пр��екта
 
-## Функционалности
-- Складова наличност на профили и материали.
-- Автоматично изчисляване на необходими материали за поръчка.
-- Управление на поръчки от клиенти.
+**AluPVC System** е уеб-базирана система за управление на цех за производство и монтаж на алуминиева и PVC дограма. Системата покрива пълния бизнес процес - от управление на материали и доставки, през поръчки и производство, до планиране на монтажи.
 
+### 🎯 Основни функционалности:
 
-## Инсталация и настройка
-1. Клонирайте хранилището.
-2. Инсталирайте зависимостите: `pip install -r requirements.txt`
-3. Конфигурирайте PostgreSQL в `settings.py`.
-4. Изпълнете миграциите: `python manage.py migrate`
-5. Стартирайте сървъра: `python manage.py runserver`
+- **📦 Управление на материали** - Профили, обков, аксесоари, стъклопакети
+- **🚚 Доставки** - Регистриране на доставки и автоматично актуализиране на наличности
+- **📋 Поръчки** - Създаване на поръчки с прозорци, врати, щори и гаражни врати
+- **🔧 Производство** - Изчисляване на размери на стъклопакети, конфигурация на крила
+- **📅 Монтажи** - Планиране и проследяване на монтажи
+
+---
+
+## 🏗️ Архитектура на проекта
+
+### Django Apps:
+
+| App | Отговорност |
+|-----|-------------|
+| **inventory** | Материали, доставчици, доставки, категории |
+| **production** | Поръчки, прозорци, врати, готови продукти |
+| **scheduling** | Планиране и управление на монтажи |
+
+### Database Models:
+
+**Inventory:**
+- `Material` - Материали за производство
+- `Category` - Категории (PVC, Алуминий)
+- `Supplier` - Доставчици
+- `Delivery` - Доставки на материали
+
+**Production:**
+- `Order` - Поръчки от клиенти
+- `CustomProduct` - Прозорци и врати
+- `ReadyProduct` - Щори и гаражни врати
+
+**Scheduling:**
+- `Installation` - Монтажи
+
+### Relationships:
+
+- **Many-to-One**: Order → CustomProduct, Order → ReadyProduct, Material → Delivery, Supplier → Delivery
+- **Many-to-Many**: Material ↔ Category, CustomProduct ↔ Material, Installation ↔ Order
+
+---
+
+## 🚀 Инсталация и стартиране
+
+### Предварителни изисквания:
+
+- Python 3.12+
+- PostgreSQL 14+ (или SQLite за тестване)
+- Git
+
+### Стъпка 1: Клониране на репозитория
+
+```bash
+git clone https://github.com/YOUR_USERNAME/AluPVCSystem.git
+cd AluPVCSystem
+```
+
+### Стъпка 2: Създаване на виртуална среда
+
+**Windows (PowerShell):**
+```powershell
+python -m venv venv
+.\venv\Scripts\Activate.ps1
+```
+
+**Linux/Mac:**
+```bash
+python3 -m venv venv
+source venv/bin/activate
+```
+
+### Стъпка 3: Инсталиране на зависимости
+
+```bash
+pip install -r requirements.txt
+```
+
+### Стъпка 4: Environment Variables (Опционално)
+
+Проектът може да работи с `.env` файл за съхранение на чувствителни данни.
+
+**Създайте `.env` файл в root папката:**
+
+```bash
+# Windows
+New-Item -ItemType File -Name .env
+
+# Linux/Mac
+touch .env
+```
+
+**Примерно съдържание на `.env` файл:**
+
+```env
+# Django Settings
+SECRET_KEY=your-secret-key-here-change-in-production
+DEBUG=True
+ALLOWED_HOSTS=localhost,127.0.0.1,*
+
+# Database Configuration (PostgreSQL)
+DB_NAME=alu_pvc_db
+DB_USER=alupvc_user
+DB_PASSWORD=your_database_password_here
+DB_HOST=localhost
+DB_PORT=5432
+```
+
+**Или копирайте template файла:**
+
+```bash
+# Windows
+Copy-Item .env.example .env
+
+# Linux/Mac
+cp .env.example .env
+```
+
+**⚠️ ВАЖНО:** 
+- `.env` файлът е добавен в `.gitignore` и **НЕ се качва** в GitHub!
+- За production използвайте силна SECRET_KEY и DEBUG=False
+- Променете паролите преди production deployment
+
+**Ако НЕ използвате `.env` файл:**
+- Проектът работи с настройките по подразбиране в `settings.py`
+- Използва SQLite база данни автоматично
+
+---
+
+### Стъпка 5: Конфигурация на базата данни
+
+#### Вариант А: PostgreSQL (Препоръчително)
+
+1. Създайте база данни:
+```sql
+CREATE DATABASE alupvc_db;
+CREATE USER alupvc_user WITH PASSWORD 'your_password';
+GRANT ALL PRIVILEGES ON DATABASE alupvc_db TO alupvc_user;
+```
+
+2. Актуализирайте `AluPVCSystem/settings.py`:
+
+```python
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'alu_pvc_db',
+        'USER': 'alupvc_user',
+        'PASSWORD': 'your_password',
+        'HOST': 'localhost',
+        'PORT': '5432',
+    }
+}
+```
+
+#### ��лтернатива (SQLite за тестване):
+
+Проектът работи и със SQLite по подразбиране - не се изисква допълнителна конфигурация.
+
+### Стъпка 5: Миграции
+
+```bash
+python manage.py makemigrations
+python manage.py migrate
+```
+
+### Стъпка 7: Създаване на суперпотребител
+
+```bash
+python manage.py createsuperuser
+```
+
+### Стъпка 8: Стартиране на сървъра
+
+```bash
+python manage.py runserver
+```
+
+Отворете браузър на: **http://127.0.0.1:8000/**
+
+---
+
+## 📁 Структура на проекта
+
+```
+AluPVCSystem/
+├── AluPVCSystem/          # Главни настройки
+│   ├── settings.py
+│   ├── urls.py
+│   └── wsgi.py
+├── inventory/             # App за материали
+│   ├── models.py
+│   ├── views.py
+│   ├── forms.py
+│   ├── urls.py
+│   └── admin.py
+├── production/            # App за производство
+│   ├── models.py
+│   ├── views.py
+│   ├── forms.py
+│   ├── urls.py
+│   ├── services.py        # Бизнес логика
+│   └── admin.py
+├── scheduling/            # App за монтажи
+│   ├── models.py
+│   ├── views.py
+│   ├── forms.py
+│   ├── urls.py
+│   └── admin.py
+├── templates/             # HTML шаблони
+│   ├── base.html
+│   ├── home.html
+│   ├── 404.html
+│   ├── inventory/
+│   ├── production/
+│   └── scheduling/
+├── static/               # Статични файлове
+│   └── css/
+│       └── style.css
+├── manage.py
+├── requirements.txt
+└── README.md
+```
+
+---
+
+## 🎨 Функционалности
+
+### 1️⃣ Управление на материали
+
+- Добавяне на профили (PVC/Алуминий) с характеристики
+- Управление на обков и аксесоари
+- Автоматично генериране на име на материал
+- Филтриране по категории
+
+### 2️⃣ Доставки
+
+- Регистриране на доставки
+- Автоматично актуализиране на складови наличности
+- Проследяване на доставчици
+
+### 3️⃣ Поръчки
+
+- Създаване на поръчки с данни за клиент
+- Добавяне на прозорци и врати с конфигурация на крила
+- Добавяне на готови продукти (щори, гаражни врати)
+- Автоматично изчисляване на размери на стъклопакети
+- Проследяване на статус на поръчка
+
+### 4️⃣ Производство
+
+- Конфигуриране на прозорци:
+  - Брой части (1, 2, 3+)
+  - ФИКС или ОТВАРЯЕМА за всяка част
+  - Равни или неравни части
+  - Делители (импости)
+- Изчисляване на размери на стъклопакети за всяко крило
+- Избор на материали и обков
+
+### 5️⃣ Монтажи
+
+- Планиране на монтажи по дати
+- Групиране на поръчки за монтаж
+- Филтриране: Минали / Днес / Предстоящи
+- Автоматично зареждане на адрес от поръчка
+
+---
+
+## 🛠️ Технологии
+
+- **Backend**: Django 6.0.2
+- **Database**: PostgreSQL / SQLite
+- **Frontend**: Bootstrap 5.3, HTML5, CSS3, JavaScript
+- **Icons**: Bootstrap Icons
+- **Version Control**: Git
+
+---
+
+## 👥 Потребителски интерфейс
+
+### Навигация:
+
+- **Материали** - Материали, Доставчици, Доставки
+- **Поръчки** - Списък, Детайли, Създаване, Редакция
+- **Монтажи** - График, Планиране
+
+### Страници (22 темплейта):
+
+1. Начална страница
+2. Списък материали
+3. Детайли на материал
+4. Добавяне на материал
+5. Списък доставчици
+6. Списък доставки
+7. Добавяне на доставка
+8. Списък поръчки
+9. Детайли на поръчка
+10. Създаване на поръчка
+11. Редакция на поръчка
+12. Добавяне на прозорец/врата
+13. Редакция на прозорец/врата
+14. Добавяне на готов продукт
+15. Редакция на готов продукт
+16. Списък монтажи
+17. Детайли на монтаж
+18. Планиране на монтаж
+19. Редакция на монтаж
+20. Confirmation страници за delete (×4)
+21. 404 Error page
+22. Base template
+
+---
+
+## 📊 Валидации
+
+### Forms (8 форми с validations):
+
+- **MaterialForm**: Автоматично генериране на име, custom валидации
+- **SupplierForm**: Валидация на полета
+- **DeliveryForm**: Проверка за положителни стойности (quantity > 0, price > 0)
+- **OrderForm**: Regex валидация за телефонен номер, MinLength за имена
+- **OrderUpdateForm**: Read-only полета
+- **CustomProductForm**: Минимални размери (200mm), конфигурация на крила
+- **ReadyProductForm**: Валидация на цени
+- **InstallationForm**: Валидация на дата, филтриране на поръчки по статус
+
+### Models:
+
+- MinValueValidator за размери и цени
+- MinLengthValidator за имена
+- Unique constraints
+- JSONField за сложни данни (parts_config, custom_widths)
+
+---
+
+## 🔐 Администрация
+
+Достъп до админ панел: **http://127.0.0.1:8000/admin/**
+
+Регистрирани модели:
+- Материали
+- Категории
+- Доставчици
+- Доставки
+- Поръчки
+- Прозорци/Врати
+- Готови продукти
+- Монтажи
+
+---
+
+## 🧪 Тестване
+
+### Примерни данни:
+
+Използвайте скриптовете за генериране на тестови данни:
+
+```bash
+python add_sample_materials.py
+python create_test_orders.py
+```
+
+Скриптовете създават:
+- 9 материала (профили, обков, аксесоари)
+- 2 категории (PVC, Алуминий)
+- 2 тестови поръчки
+
+### Ръчно тестване:
+
+1. Създайте категории (PVC, Алуминий)
+2. Добавете материали (профили, обков)
+3. Създайте доставчик
+4. Регистрирайте доставка
+5. Създайте поръчка
+6. Добавете прозорец към поръчката
+7. Планирайте монтаж
+
+---
+
+## 🎓 Проект за изпит Django Basics @ SoftUni
+
+Този проект е създаден за индивидуален изпит по Django Basics @ SoftUni (Февруари 2026).
+
+### Покрити изисквания:
+
+✅ 3 Django apps (inventory, production, scheduling)  
+✅ 8 database models  
+✅ Many-to-One и Many-to-Many relationships  
+✅ 8 forms с validations  
+✅ 20+ views (FBV)  
+✅ 22 templates с dynamic data  
+✅ Full CRUD за Order, Material, CustomProduct, Installation  
+✅ Template inheritance и reusable components  
+✅ Bootstrap design  
+✅ Navigation на всички страници  
+✅ 404 error page  
+✅ PostgreSQL support  
+✅ Clean code и OOP principles  
+
+### Advanced Features:
+
+- JavaScript за dynamic forms
+- Автоматично изчисляване на размери на стъклопакети
+- JSONField за сложни конфигурации
+- services.py за business logic
+- Custom CSS styling
+- Messages framework
+- Filtering и sorting
+
+---
+
+## 📧 Контакти
+
+**Автор**: Йълдъз Въчева 
+**GitHub**: [github.com/yaldazv](https://github.com/YOUR_USERNAME)
+
+---
+
+## 📜 Лиценз
+
+Този проект е създаден за учебни цели като част от курса Django Basics @ SoftUni.
+
+---
+
+**Дата на създаване**: Февруари 2026  
+**Последна актуализация**: 23.02.2026
