@@ -107,8 +107,8 @@
                                 <td>{{ delivery.delivery_date|date:"d.m.Y" }}</td>
                                 <td>{{ delivery.supplier.name }}</td>
                                 <td>{{ delivery.quantity }} {{ material.unit }}</td>
-                                <td>{{ delivery.price_per_unit|floatformat:2 }} лв</td>
-                                <td>{{ delivery.total_price|floatformat:2 }} лв</td>
+                                <td>{{ delivery.price_per_unit|floatformat:2 }} €</td>
+                                <td>{{ delivery.total_price|floatformat:2 }} €</td>
                             </tr>
                             {% endfor %}
                         </tbody>

@@ -1,6 +1,6 @@
-{% load custom_filters %}
-
 {% extends 'base.html' %}
+
+{% load custom_filters %}
 
 {% block title %}Поръчка #{{ order.id }}{% endblock %}
 
@@ -67,7 +67,7 @@
                                 <th>Брой крила</th>
                                 <th>Делители</th>
                                 <th>Размер стъкло/крило (мм)</th>
-                                <th>Площ стъкло (м²)</th>
+                                <th>Площ (м²)</th>
                                 <th>Тип отваряне</th>
                                 <th>Действия</th>
                             </tr>
@@ -101,7 +101,17 @@
                                             <strong class="text-primary">{{ product.glass_size_per_sash }}</strong>
                                         {% endif %}
                                     </td>
-                                    <td>{{ product.glass_area|floatformat:2 }}</td>
+                                    <td>
+                                        <strong>{{ product.glass_area|floatformat:2 }} м²</strong>
+                                        <br>
+                                        <small class="text-muted">
+                                            {% if product.product_type == 'door' %}
+                                                (запълване/стъкло)
+                                            {% else %}
+                                                (стъкло)
+                                            {% endif %}
+                                        </small>
+                                    </td>
                                     <td>
                                         <small>{{ product.get_opening_type_display }}</small>
                                     </td>

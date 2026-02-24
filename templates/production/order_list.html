@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load custom_filters %}
 
 {% block title %}Всички поръчки{% endblock %}
 
@@ -21,51 +22,53 @@
     {% endif %}
 
     {% if orders %}
-        <div class="table-responsive">
-            <table class="table table-striped table-hover">
+        <div class="table-responsive shadow-sm rounded">
+            <table class="table table-hover align-middle">
                 <thead class="table-dark">
                     <tr>
-                        <th>#</th>
-                        <th>Клиент</th>
-                        <th>Телефон</th>
-                        <th>Адрес</th>
-                        <th>Статус</th>
-                        <th>Дата на създаване</th>
-                        <th>Действия</th>
+                        <th style="width: 5%">#</th>
+                        <th style="width: 20%">Клиент</th>
+                        <th style="width: 15%">Телефон</th>
+                        <th style="width: 20%">Адрес</th>
+                        <th style="width: 15%">Статус</th>
+                        <th style="width: 15%">Дата</th>
+                        <th style="width: 10%">Действия</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for order in orders %}
-                        <tr>
+                        {# Добавяме клас 'text-muted table-light' за завършените поръчки #}
+                        <tr {% if order.status == 'completed' %}class="text-muted table-light" style="opacity: 0.8;"{% endif %}>
                             <td><strong>{{ order.id }}</strong></td>
                             <td>{{ order.customer_name }}</td>
                             <td>{{ order.customer_phone }}</td>
-                            <td>{{ order.delivery_address|truncatewords:5 }}</td>
                             <td>
-                                <span class="badge 
-                                    {% if order.status == 'pending' %}bg-warning text-dark
-                                    {% elif order.status == 'in_production' %}bg-info
-                                    {% elif order.status == 'ready' %}bg-success
-                                    {% elif order.status == 'completed' %}bg-secondary
-                                    {% elif order.status == 'cancelled' %}bg-danger
-                                    {% endif %}">
+                                <small>{{ order.delivery_address|truncatewords:5 }}</small>
+                            </td>
+                            <td>
+                                {# Използваме твоя custom филтър за автоматичен цвят на баджа #}
+                                <span class="badge {{ order.status|status_badge }} shadow-sm">
                                     {{ order.get_status_display }}
                                 </span>
                             </td>
-                            <td>{{ order.created_at|date:"d.m.Y H:i" }}</td>
                             <td>
-                                <a href="{% url 'production:order-detail' order.pk %}" 
-                                   class="btn btn-sm btn-info" title="Детайли">
-                                    👁️
-                                </a>
-                                <a href="{% url 'production:order-update' order.pk %}" 
-                                   class="btn btn-sm btn-warning" title="Редактирай">
-                                    ✏️
-                                </a>
-                                <a href="{% url 'production:order-delete' order.pk %}" 
-                                   class="btn btn-sm btn-danger" title="Изтрий">
-                                    🗑️
-                                </a>
+                                <small>{{ order.created_at|date:"d.m.Y H:i" }}</small>
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a href="{% url 'production:order-detail' order.pk %}"
+                                       class="btn btn-outline-info" title="Детайли">
+                                        👁️
+                                    </a>
+                                    <a href="{% url 'production:order-update' order.pk %}"
+                                       class="btn btn-outline-warning" title="Редактирай">
+                                        ✏️
+                                    </a>
+                                    <a href="{% url 'production:order-delete' order.pk %}"
+                                       class="btn btn-outline-danger" title="Изтрий">
+                                        🗑️
+                                    </a>
+                                </div>
                             </td>
                         </tr>
                     {% endfor %}
@@ -73,10 +76,13 @@
             </table>
         </div>
     {% else %}
-        <div class="alert alert-info">
-            <h4>📭 Няма поръчки</h4>
-            <p>Все още няма създадени поръчки. Създайте първата си поръчка сега!</p>
-            <a href="{% url 'production:order-create' %}" class="btn btn-primary">➕ Създай поръчка</a>
+        <div class="text-center py-5">
+            <div class="display-1 text-muted mb-4">📭</div>
+            <h4>Няма създадени поръчки</h4>
+            <p class="text-muted">Започнете, като добавите първата си поръчка за производство.</p>
+            <a href="{% url 'production:order-create' %}" class="btn btn-lg btn-primary">
+                ➕ Създай поръчка
+            </a>
         </div>
     {% endif %}
 </div>

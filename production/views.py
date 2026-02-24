@@ -5,7 +5,7 @@ from .forms import OrderForm, OrderUpdateForm, CustomProductForm, ReadyProductFo
 
 
 def order_list(request):
-    orders = Order.objects.all()
+    orders = Order.objects.all().order_by('-created_at')
     return render(request, 'production/order_list.html', {'orders': orders})
 
 
@@ -111,7 +111,7 @@ def custom_product_create(request, order_pk):
             product.total_sashes = parts_count
 
             product.save()
-            form.save_m2m()  # Запазва Many-to-Many връзките
+            form.save_m2m()
             messages.success(request, f'✅ {product.get_product_type_display()} беше добавен към поръчката!')
             return redirect('production:order-detail', pk=order.pk)
     else:

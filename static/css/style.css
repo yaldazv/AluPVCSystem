@@ -321,3 +321,18 @@ footer h5 {
     vertical-align: middle;
 }
 
+/* ========== INSTALLATION TABS ========== */
+.nav-pills .nav-link {
+    transition: all 0.3s ease;
+    border-radius: 8px;
+}
+
+.nav-pills .nav-link:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Неактивни табове - hover ефект */
+.nav-pills .nav-link:not(.active):hover {
+    opacity: 0.8;
+}

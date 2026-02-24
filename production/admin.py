@@ -18,14 +18,16 @@ class CustomProductAdmin(admin.ModelAdmin):
         'width',
         'height',
         'sash_count',
-        'opening_type',
+        'opening_mechanism',
+        'opening_direction',
         'order'
     ]
 
     list_filter = [
         'product_type',
         'category',
-        'opening_type'
+        'opening_mechanism',
+        'opening_direction'
     ]
 
     search_fields = [
@@ -44,7 +46,8 @@ class CustomProductAdmin(admin.ModelAdmin):
                 'width',
                 'height',
                 'sash_count',
-                'opening_type'
+                'opening_mechanism',
+                'opening_direction'
             )
         }),
         ('Материали', {

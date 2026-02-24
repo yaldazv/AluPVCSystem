@@ -53,6 +53,12 @@ class Installation(models.Model):
         order_count = self.orders.count()
         return f"Монтаж на {self.installation_date} ({order_count} поръчки)"
 
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+
+
+        if self.status == 'completed':
+            self.orders.all().update(status='completed')
     class Meta:
         verbose_name = "Монтаж"
         verbose_name_plural = "Монтажи"

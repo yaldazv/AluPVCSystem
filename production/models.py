@@ -71,20 +71,35 @@ class CustomProduct(models.Model):
         help_text="Колко крила има прозорецът/вратата (1, 2, 3...)"
     )
 
-    OPENING_TYPES = [
+    OPENING_MECHANISMS = [
         ('fixed', 'Фиксиран (без отваряне)'),
-        ('turn', 'Едноврилен (въртящ)'),
-        ('tilt_turn', 'Двукрилен (въртящ и наклоняем)'),
+        ('turn', 'Въртящ (стандартно)'),
+        ('tilt_turn', 'Въртящ и наклоняем'),
         ('sliding', 'Плъзгащ'),
         ('lift_sliding', 'Повдигащ-плъзгащ'),
     ]
 
-    opening_type = models.CharField(
+    OPENING_DIRECTIONS = [
+        ('left', 'Ляво'),
+        ('right', 'Дясно'),
+        ('up', 'Нагоре'),
+        ('none', 'Без посока (фиксирано)'),
+    ]
+
+    opening_mechanism = models.CharField(
         max_length=20,
-        choices=OPENING_TYPES,
+        choices=OPENING_MECHANISMS,
         default='turn',
-        verbose_name="Тип отваряне",
+        verbose_name="Механизъм на отваряне",
         help_text="Как се отваря прозорецът/вратата"
+    )
+
+    opening_direction = models.CharField(
+        max_length=10,
+        choices=OPENING_DIRECTIONS,
+        default='left',
+        verbose_name="Посока на отваряне",
+        help_text="За врати: Ляво/Дясно | За прозорци: Ляво/Дясно (настрани) или Нагоре"
     )
 
     has_mullions = models.BooleanField(

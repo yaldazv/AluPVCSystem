@@ -97,6 +97,22 @@ def supplier_list(request):
     return render(request, 'inventory/supplier_list.html', context)
 
 
+def supplier_create(request):
+    """Добавяне на нов доставчик"""
+    if request.method == 'POST':
+        form = SupplierForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('supplier_list')
+    else:
+        form = SupplierForm()
+
+    context = {
+        'form': form,
+    }
+    return render(request, 'inventory/supplier_form.html', context)
+
+
 # ============ DELIVERY VIEWS ============
 
 def delivery_list(request):

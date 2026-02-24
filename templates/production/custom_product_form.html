@@ -229,64 +229,48 @@ document.addEventListener('DOMContentLoaded', function() {
     const hasMullionsCheckbox = document.getElementById('id_has_mullions');
     const mullionCountInput = document.getElementById('id_mullion_count');
     const isEqualPartsCheckbox = document.getElementById('id_is_equal_parts');
+    const unequalPartsContainer = document.getElementById('unequal_parts_container');
+    const customWidthsList = document.getElementById('custom_widths_list');
 
-    // Функция за скриване/показване на полета според типа продукт
+    // Данни при редакция
+    let existingConfig = {% if product %}{{ product.parts_config|safe|default:"[]" }}{% else %}[]{% endif %};
+    let existingWidths = {% if product %}{{ product.custom_widths|safe|default:"{}" }}{% else %}{}{% endif %};
+
     function toggleFieldsByProductType() {
-        const isDoor = productTypeSelect.value === 'door';
+        // Проверяваме дали избраната стойност е 'door' (врата)
+        // ВАЖНО: Провери дали в Django ChoiceField стойноста е 'door' или 'Врата'
+        const isDoor = productTypeSelect.value === 'door' || productTypeSelect.value === 'Врата';
 
-        // Намираме контейнерите на полетата
         const partsCountRow = partsCountSelect.closest('.row');
         const mullionsRow = hasMullionsCheckbox.closest('.row');
 
         if (isDoor) {
-            // При врата - опростяваме всичко
-            partsCountSelect.value = '1';
-            hasMullionsCheckbox.checked = false;
-            isEqualPartsCheckbox.checked = true;
-            mullionCountInput.value = '0';
-
-            // Скриваме сложните контейнери
-            partsConfigContainer.style.display = 'none';
-            document.getElementById('unequal_parts_container').style.display = 'none';
-
-            // Скриваме редовете с полета
+            // Скриваме настройките за части при врата
             if (partsCountRow) partsCountRow.style.display = 'none';
             if (mullionsRow) mullionsRow.style.display = 'none';
+            partsConfigContainer.style.display = 'none';
+            unequalPartsContainer.style.display = 'none';
+
+            // Ресетваме стойностите на 1 част за врата
+            partsCountSelect.value = '1';
+            hasMullionsCheckbox.checked = false;
+            updateMullionCount();
         } else {
-            // При прозорец - показваме всички полета
-            if (partsCountRow) partsCountRow.style.display = 'block';
+            // Показваме всичко обратно за прозорец
+            if (partsCountRow) partsCountRow.style.display = 'flex';
             if (mullionsRow) mullionsRow.style.display = 'flex';
 
-            // Генерираме динамичните полета
+            // Пускаме функциите за рендериране на частите
             generatePartsFields();
             generateCustomWidthsFields();
         }
     }
 
-    // Event listener за промяна на типа продукт
-    if (productTypeSelect) {
-        productTypeSelect.addEventListener('change', toggleFieldsByProductType);
-        // Извикваме веднага при зареждане
-        toggleFieldsByProductType();
-    }
-    const unequalPartsContainer = document.getElementById('unequal_parts_container');
-    const customWidthsList = document.getElementById('custom_widths_list');
-
-    // Зареждане на съществуваща конфигурация (при редакция)
-    {% if product %}
-    let existingConfig = {{ product.parts_config|safe|default:"[]" }};
-    let existingWidths = {{ product.custom_widths|safe|default:"{}" }};
-    {% else %}
-    let existingConfig = [];
-    let existingWidths = {};
-    {% endif %}
-
-    // Генериране на полета за всяка част (ФИКС/ОТВАРЯЕМА)
     function generatePartsFields() {
         const count = parseInt(partsCountSelect.value) || 1;
         partsList.innerHTML = '';
 
-        if (count === 1) {
+        if (count <= 1 || productTypeSelect.value === 'door') {
             partsConfigContainer.style.display = 'none';
             return;
         }
@@ -300,7 +284,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const partDiv = document.createElement('div');
             partDiv.className = 'col-md-4 mb-3';
             partDiv.innerHTML = `
-                <div class="card">
+                <div class="card h-100 border-primary-subtle">
                     <div class="card-body">
                         <label class="form-label fw-bold">Част ${i}:</label>
                         <select name="part_${i}_type" class="form-select" required>
@@ -312,127 +296,70 @@ document.addEventListener('DOMContentLoaded', function() {
             `;
             partsList.appendChild(partDiv);
         }
-
         updateMullionCount();
     }
 
-    // Генериране на полета за ръчно въвеждане на размери (за неравни части)
     function generateCustomWidthsFields() {
         const count = parseInt(partsCountSelect.value) || 1;
         const isEqual = isEqualPartsCheckbox.checked;
 
         customWidthsList.innerHTML = '';
 
-        // Показваме само ако има повече от 1 част И не са равни
-        if (count === 1 || isEqual) {
+        if (count <= 1 || isEqual || productTypeSelect.value === 'door') {
             unequalPartsContainer.style.display = 'none';
             return;
         }
 
         unequalPartsContainer.style.display = 'block';
 
-        // За 2 части - само първата част (до ос на делителя)
         if (count === 2) {
-            const existingWidth = existingWidths.part1_width || '';
-            const widthDiv = document.createElement('div');
-            widthDiv.className = 'col-md-6 mb-3';
-            widthDiv.innerHTML = `
-                <div class="card">
-                    <div class="card-body">
-                        <label class="form-label fw-bold">Ширина на Част 1 (до оста на делителя):</label>
-                        <input type="number" name="part_1_width" class="form-control"
-                               placeholder="мм" min="100" step="1" value="${existingWidth}" required>
-                        <small class="text-muted">Размер от ръба до оста на делителя</small>
-                    </div>
-                </div>
-            `;
-            customWidthsList.appendChild(widthDiv);
-        }
-        // За 3 части - първа и втора част
-        else if (count === 3) {
-            const existingWidth1 = existingWidths.part1_width || '';
-            const existingWidth2 = existingWidths.part2_width || '';
-
-            const width1Div = document.createElement('div');
-            width1Div.className = 'col-md-6 mb-3';
-            width1Div.innerHTML = `
-                <div class="card">
-                    <div class="card-body">
-                        <label class="form-label fw-bold">Ширина на Част 1 (до оста):</label>
-                        <input type="number" name="part_1_width" class="form-control"
-                               placeholder="мм" min="100" step="1" value="${existingWidth1}" required>
-                        <small class="text-muted">От ръба до оста на първия делител</small>
-                    </div>
-                </div>
-            `;
-
-            const width2Div = document.createElement('div');
-            width2Div.className = 'col-md-6 mb-3';
-            width2Div.innerHTML = `
-                <div class="card">
-                    <div class="card-body">
-                        <label class="form-label fw-bold">Ширина на Част 2 (между оси):</label>
-                        <input type="number" name="part_2_width" class="form-control"
-                               placeholder="мм" min="100" step="1" value="${existingWidth2}" required>
-                        <small class="text-muted">Разстояние между осите на делителите</small>
-                    </div>
-                </div>
-            `;
-
-            customWidthsList.appendChild(width1Div);
-            customWidthsList.appendChild(width2Div);
-        }
-        // За повече от 3 части
-        else if (count > 3) {
+            const val = existingWidths.part1_width || '';
+            renderWidthInput(1, "Ширина на Част 1 (до ос):", val, "От ръба до оста на делителя", 6);
+        } else if (count === 3) {
+            renderWidthInput(1, "Ширина на Част 1:", (existingWidths.part1_width || ''), "До първа ос", 6);
+            renderWidthInput(2, "Ширина на Част 2:", (existingWidths.part2_width || ''), "Между осите", 6);
+        } else {
             for (let i = 1; i < count; i++) {
-                const existingWidth = existingWidths[`part${i}_width`] || '';
-                const widthDiv = document.createElement('div');
-                widthDiv.className = 'col-md-4 mb-3';
-                widthDiv.innerHTML = `
-                    <div class="card">
-                        <div class="card-body">
-                            <label class="form-label fw-bold">Ширина Част ${i}:</label>
-                            <input type="number" name="part_${i}_width" class="form-control"
-                                   placeholder="мм" min="100" step="1" value="${existingWidth}" required>
-                        </div>
-                    </div>
-                `;
-                customWidthsList.appendChild(widthDiv);
+                renderWidthInput(i, `Ширина Част ${i}:`, (existingWidths[`part${i}_width`] || ''), "", 4);
             }
         }
     }
 
-    // Автоматично изчисляване на брой делители
+    function renderWidthInput(index, label, value, help, col) {
+        const div = document.createElement('div');
+        div.className = `col-md-${col} mb-3`;
+        div.innerHTML = `
+            <div class="card border-info-subtle">
+                <div class="card-body">
+                    <label class="form-label fw-bold">${label}</label>
+                    <input type="number" name="part_${index}_width" class="form-control" step="1" value="${value}" required>
+                    ${help ? `<small class="text-muted">${help}</small>` : ''}
+                </div>
+            </div>`;
+        customWidthsList.appendChild(div);
+    }
+
     function updateMullionCount() {
         const count = parseInt(partsCountSelect.value) || 1;
-        const hasMullions = hasMullionsCheckbox.checked;
-
-        if (hasMullions && count > 1) {
+        if (hasMullionsCheckbox.checked && count > 1) {
             mullionCountInput.value = count - 1;
         } else {
             mullionCountInput.value = 0;
         }
     }
 
-    // Event listeners
-    partsCountSelect.addEventListener('change', function() {
-        existingConfig = [];
-        existingWidths = {};
+    // Слушатели за събития
+    productTypeSelect.addEventListener('change', toggleFieldsByProductType);
+    partsCountSelect.addEventListener('change', () => {
+        existingConfig = []; // Нулираме при ръчна промяна
         generatePartsFields();
         generateCustomWidthsFields();
     });
-
     hasMullionsCheckbox.addEventListener('change', updateMullionCount);
+    isEqualPartsCheckbox.addEventListener('change', generateCustomWidthsFields);
 
-    // Когато се променя "Равни части", показваме/скриваме полетата за размери
-    isEqualPartsCheckbox.addEventListener('change', function() {
-        existingWidths = {};
-        generateCustomWidthsFields();
-    });
-
-    // Инициализация при зареждане
-    generatePartsFields();
-    generateCustomWidthsFields();
+    // Стартиране при зареждане
+    toggleFieldsByProductType();
 });
 </script>
 

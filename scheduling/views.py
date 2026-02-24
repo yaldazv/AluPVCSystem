@@ -1,5 +1,4 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.utils import timezone
 from datetime import date
 from .models import Installation
 from .forms import InstallationForm
@@ -11,17 +10,25 @@ def installation_list(request):
     # Определяме активния таб (по подразбиране 'upcoming')
     active_tab = request.GET.get('tab', 'upcoming')
 
+    # Броячи за всеки таб
+    past_count = Installation.objects.filter(installation_date__lt=today).count()
+    today_count = Installation.objects.filter(installation_date=today).count()
+    upcoming_count = Installation.objects.filter(installation_date__gt=today).count()
+
     if active_tab == 'past':
         installations = Installation.objects.filter(installation_date__lt=today).order_by('-installation_date')
     elif active_tab == 'today':
         installations = Installation.objects.filter(installation_date=today).order_by('installation_date')
     else:  # upcoming
-        installations = Installation.objects.filter(installation_date__gte=today).order_by('installation_date')
+        installations = Installation.objects.filter(installation_date__gt=today).order_by('installation_date')
 
     context = {
         'installations': installations,
         'active_tab': active_tab,
         'today': today,
+        'past_count': past_count,
+        'today_count': today_count,
+        'upcoming_count': upcoming_count,
     }
     return render(request, 'scheduling/installation_list.html', context)
 

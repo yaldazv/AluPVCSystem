@@ -12,27 +12,36 @@
     </div>
 
     <div class="card mb-4">
-        <div class="card-body p-2">
+        <div class="card-body p-3">
             <ul class="nav nav-pills justify-content-center">
                 <li class="nav-item">
                     <a class="nav-link {% if active_tab == 'past' %}active{% endif %}"
                        href="?tab=past"
-                       style="{% if active_tab == 'past' %}background-color: #6c757d; color: white;{% else %}color: #2c3e50;{% endif %}">
+                       style="{% if active_tab == 'past' %}background-color: #6c757d !important; color: white !important; border: 2px solid #6c757d;{% else %}background-color: white !important; color: #495057 !important; border: 2px solid #6c757d;{% endif %} font-weight: 600; margin: 0 5px; padding: 10px 20px; border-radius: 8px;">
                         <i class="bi bi-clock-history"></i> Минали
+                        <span class="badge {% if active_tab == 'past' %}bg-light text-dark{% else %}bg-secondary{% endif %} ms-2">
+                            {{ past_count }}
+                        </span>
                     </a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link {% if active_tab == 'today' %}active{% endif %}"
                        href="?tab=today"
-                       style="{% if active_tab == 'today' %}background-color: #27ae60; color: white;{% else %}color: #2c3e50;{% endif %}">
+                       style="{% if active_tab == 'today' %}background-color: #27ae60 !important; color: white !important; border: 2px solid #27ae60;{% else %}background-color: white !important; color: #495057 !important; border: 2px solid #27ae60;{% endif %} font-weight: 600; margin: 0 5px; padding: 10px 20px; border-radius: 8px;">
                         <i class="bi bi-calendar-check"></i> Днес
+                        <span class="badge {% if active_tab == 'today' %}bg-light text-dark{% else %}bg-success{% endif %} ms-2">
+                            {{ today_count }}
+                        </span>
                     </a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link {% if active_tab == 'upcoming' %}active{% endif %}"
                        href="?tab=upcoming"
-                       style="{% if active_tab == 'upcoming' %}background-color: #3498db; color: white;{% else %}color: #2c3e50;{% endif %}">
+                       style="{% if active_tab == 'upcoming' %}background-color: #3498db !important; color: white !important; border: 2px solid #3498db;{% else %}background-color: white !important; color: #495057 !important; border: 2px solid #3498db;{% endif %} font-weight: 600; margin: 0 5px; padding: 10px 20px; border-radius: 8px;">
                         <i class="bi bi-calendar3"></i> Предстоящи
+                        <span class="badge {% if active_tab == 'upcoming' %}bg-light text-dark{% else %}bg-primary{% endif %} ms-2">
+                            {{ upcoming_count }}
+                        </span>
                     </a>
                 </li>
             </ul>

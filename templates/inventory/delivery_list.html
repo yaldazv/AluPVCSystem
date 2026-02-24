@@ -33,8 +33,8 @@
                     </td>
                     <td>{{ delivery.supplier.name }}</td>
                     <td>{{ delivery.quantity }} {{ delivery.material.unit }}</td>
-                    <td>{{ delivery.price_per_unit|floatformat:2 }} лв</td>
-                    <td><strong>{{ delivery.total_price|floatformat:2 }} лв</strong></td>
+                    <td>{{ delivery.price_per_unit|floatformat:2 }} €</td>
+                    <td><strong>{{ delivery.total_price|floatformat:2 }} €</strong></td>
                     <td>
                         {% if delivery.invoice_number %}
                             <span class="badge bg-info">{{ delivery.invoice_number }}</span>

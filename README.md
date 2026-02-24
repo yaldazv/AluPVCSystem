@@ -63,7 +63,7 @@
 ### Стъпка 1: Клониране на репозитория
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/AluPVCSystem.git
+git clone https://github.com/yaldazv/AluPVCSystem.git
 cd AluPVCSystem
 ```
 
@@ -417,13 +417,14 @@ python create_test_orders.py
 - Custom CSS styling
 - Messages framework
 - Filtering и sorting
+- Signals/Custom Logic: Автоматична промяна на статуса на поръчките към 'Завършена' при приключване на монтаж.
 
 ---
 
 ## 📧 Контакти
 
 **Автор**: Йълдъз Въчева 
-**GitHub**: [github.com/yaldazv](https://github.com/YOUR_USERNAME)
+**GitHub**: [github.com/yaldazv](https://github.com/yaldazv)
 
 ---
 
@@ -434,4 +435,4 @@ python create_test_orders.py
 ---
 
 **Дата на създаване**: Февруари 2026  
-**Последна актуализация**: 23.02.2026
+**Последна актуализация**: 24.02.2026
