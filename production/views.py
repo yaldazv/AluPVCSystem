@@ -1,248 +1,344 @@
-from django.shortcuts import render, redirect, get_object_or_404
+from django.shortcuts import get_object_or_404, redirect
+from django.urls import reverse_lazy, reverse
 from django.contrib import messages
-from .models import Order, CustomProduct, ReadyProduct
-from .forms import OrderForm, OrderUpdateForm, CustomProductForm, ReadyProductForm
+from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
+from django.contrib.auth.mixins import LoginRequiredMixin
+from .models import Order, CustomProduct, ReadyProduct, QuoteRequest
+from .forms import OrderForm, OrderUpdateForm, CustomProductForm, ReadyProductForm, QuoteRequestForm
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from .serializers import OrderSerializer
+from django_q.tasks import async_task
+from .tasks import send_order_ready_email
 
 
-def order_list(request):
-    orders = Order.objects.all().order_by('-created_at')
-    return render(request, 'production/order_list.html', {'orders': orders})
+# ==========================================
+# ЗАЯВКИ ЗА ОГЛЕД (Quote Requests)
+# ==========================================
+
+class QuoteRequestCreateView(LoginRequiredMixin, CreateView):
+    model = QuoteRequest
+    form_class = QuoteRequestForm
+    template_name = 'production/quote_request_form.html'
+    success_url = reverse_lazy('production:quote-list')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = 'Заяви оглед / Оферта'
+        return context
+
+    def form_valid(self, form):
+        form.instance.customer = self.request.user
+        messages.success(self.request, "Заявката ви за оглед/оферта беше изпратена успешно! Ще се свържем с вас скоро.")
+        return super().form_valid(form)
 
 
-def order_detail(request, pk):
-    order = get_object_or_404(Order, pk=pk)
-    custom_products = order.products.all()
-    ready_products = order.ready_products.all()
+class QuoteRequestListView(LoginRequiredMixin, ListView):
+    model = QuoteRequest
+    template_name = 'production/quote_request_list.html'
+    context_object_name = 'quotes'
 
-    context = {
-        'order': order,
-        'custom_products': custom_products,
-        'ready_products': ready_products,
-    }
-    return render(request, 'production/order_detail.html', context)
+    def get_queryset(self):
+        if self.request.user.role in ['Admin', 'Staff']:
+            return QuoteRequest.objects.all().order_by('-created_at')
+        return QuoteRequest.objects.filter(customer=self.request.user).order_by('-created_at')
 
 
-def order_create(request):
-    if request.method == 'POST':
-        form = OrderForm(request.POST)
-        if form.is_valid():
-            order = form.save()
-            messages.success(request, f'✅ Поръчка #{order.id} за {order.customer_name} беше успешно създадена!')
-            return redirect('production:order-detail', pk=order.pk)
-    else:
-        form = OrderForm()
+# ==========================================
+# ПОРЪЧКИ (Orders)
+# ==========================================
 
-    return render(request, 'production/order_form.html', {
-        'form': form,
-        'title': 'Нова поръчка'
-    })
+class OrderListView(LoginRequiredMixin, ListView):
+    model = Order
+    template_name = 'production/order_list.html'
+    context_object_name = 'orders'
 
-
-def order_update(request, pk):
-    """Редактиране на съществуваща поръчка"""
-    order = get_object_or_404(Order, pk=pk)
-
-    if request.method == 'POST':
-        form = OrderUpdateForm(request.POST, instance=order)
-        if form.is_valid():
-            form.save()
-            messages.success(request, f'✅ Поръчка #{order.id} беше актуализирана!')
-            return redirect('production:order-detail', pk=order.pk)
-    else:
-        form = OrderUpdateForm(instance=order)
-
-    return render(request, 'production/order_form.html', {
-        'form': form,
-        'order': order,
-        'title': f'Редакция на поръчка #{order.id}'
-    })
+    def get_queryset(self):
+        if self.request.user.role == 'Customer':
+            return Order.objects.filter(customer=self.request.user).order_by('-created_at')
+        return Order.objects.all().order_by('-created_at')
 
 
-def order_delete(request, pk):
-    """Изтриване на поръчка с потвърждение"""
-    order = get_object_or_404(Order, pk=pk)
+class OrderDetailView(LoginRequiredMixin, DetailView):
+    model = Order
+    template_name = 'production/order_detail.html'
+    context_object_name = 'order'
 
-    if request.method == 'POST':
-        customer_name = order.customer_name
-        order.delete()
-        messages.success(request, f'🗑️ Поръчка #{pk} за {customer_name} беше изтрита!')
-        return redirect('production:order-list')
-
-    return render(request, 'production/order_confirm_delete.html', {'order': order})
-
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['custom_products'] = self.object.products.all()
+        context['ready_products'] = self.object.ready_products.all()
+        return context
 
 
-def custom_product_create(request, order_pk):
-    order = get_object_or_404(Order, pk=order_pk)
+class OrderCreateView(LoginRequiredMixin, CreateView):
+    model = Order
+    form_class = OrderForm
+    template_name = 'production/order_form.html'
 
-    if request.method == 'POST':
-        form = CustomProductForm(request.POST)
-        if form.is_valid():
-            product = form.save(commit=False)
-            product.order = order
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = 'Нова поръчка'
+        return context
 
-            # Обработка на конфигурацията за всяка част (ФИКС/ОТВАРЯЕМА)
-            parts_config = []
-            parts_count = product.parts_count
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request,
+                         f'✅ Поръчка #{self.object.id} за {self.object.customer_name} беше успешно създадена!')
+        return response
 
-            for i in range(1, parts_count + 1):
-                part_type = request.POST.get(f'part_{i}_type', 'fix')
-                parts_config.append({
-                    'position': i,
-                    'type': part_type
-                })
-
-            product.parts_config = parts_config
+    def get_success_url(self):
+        return reverse('production:order-detail', kwargs={'pk': self.object.pk})
 
 
-            if not product.is_equal_parts and parts_count > 1:
-                custom_widths = {}
-                for i in range(1, parts_count):
-                    width_value = request.POST.get(f'part_{i}_width')
-                    if width_value:
-                        custom_widths[f'part{i}_width'] = int(width_value)
-                product.custom_widths = custom_widths
-            else:
-                product.custom_widths = {}
-
-            # Изчисляване на отваряемите части
-            openable_count = sum(1 for part in parts_config if part['type'] == 'open')
-            product.openable_sashes = openable_count
-            product.total_sashes = parts_count
-
-            product.save()
-            form.save_m2m()
-            messages.success(request, f'✅ {product.get_product_type_display()} беше добавен към поръчката!')
-            return redirect('production:order-detail', pk=order.pk)
-    else:
-        form = CustomProductForm()
-
-    return render(request, 'production/custom_product_form.html', {
-        'form': form,
-        'order': order,
-        'title': 'Добави прозорец/врата'
-    })
+from django_q.tasks import async_task  # ДОБАВИ ТОЗИ ИМПОРТ НАЙ-ГОРЕ ВЪВ ФАЙЛА (при другите импорти)
+from .tasks import send_order_ready_email  # И ТОЗИ СЪЩО
 
 
-def custom_product_update(request, pk):
-    product = get_object_or_404(CustomProduct, pk=pk)
+class OrderUpdateView(LoginRequiredMixin, UpdateView):
+    model = Order
+    form_class = OrderUpdateForm
+    template_name = 'production/order_form.html'
 
-    if request.method == 'POST':
-        form = CustomProductForm(request.POST, instance=product)
-        if form.is_valid():
-            product = form.save(commit=False)
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = f'Редакция на поръчка #{self.object.id}'
+        return context
 
-            parts_config = []
-            parts_count = product.parts_count
+    def form_valid(self, form):
+        # 1. Взимаме стария статус, ПРЕДИ да запишем новия
+        old_status = self.get_object().status
 
-            for i in range(1, parts_count + 1):
-                part_type = request.POST.get(f'part_{i}_type', 'fix')
-                parts_config.append({
-                    'position': i,
-                    'type': part_type
-                })
+        # 2. Запазваме формата (вече обектът има новия статус)
+        response = super().form_valid(form)
+        new_status = self.object.status
 
-            product.parts_config = parts_config
+        # 3. Проверяваме дали статусът ТОКУ-ЩО е станал 'ready' (Готова за монтаж)
+        if old_status != 'ready' and new_status == 'ready':
+            # Проверяваме дали имаме имейл на клиента
+            customer_email = self.object.customer.email if self.object.customer else "test@example.com"
+            customer_name = self.object.customer.username if self.object.customer else (
+                        self.object.customer_name or "Клиент")
 
+            # 4. ИЗВИКВАМЕ АСИНХРОННАТА ЗАДАЧА! Тя ще се изпълни на заден план.
+            async_task(send_order_ready_email, self.object.id, customer_email, customer_name)
 
-            if not product.is_equal_parts and parts_count > 1:
-                custom_widths = {}
-                for i in range(1, parts_count):
-                    width_value = request.POST.get(f'part_{i}_width')
-                    if width_value:
-                        custom_widths[f'part{i}_width'] = int(width_value)
-                product.custom_widths = custom_widths
-            else:
-                product.custom_widths = {}
+            messages.info(self.request, "Започна асинхронно изпращане на имейл към клиента.")
 
-            # Изчисляване на отваряемите части
-            openable_count = sum(1 for part in parts_config if part['type'] == 'open')
-            product.openable_sashes = openable_count
-            product.total_sashes = parts_count
+        messages.success(self.request, f'✅ Поръчка #{self.object.id} беше актуализирана!')
+        return response
 
-            product.save()
-            form.save_m2m()
-            messages.success(request, f'✅ {product.get_product_type_display()} беше актуализиран!')
-            return redirect('production:order-detail', pk=product.order.pk)
-    else:
-        form = CustomProductForm(instance=product)
-
-    return render(request, 'production/custom_product_form.html', {
-        'form': form,
-        'product': product,
-        'order': product.order,
-        'title': 'Редактирай продукт'
-    })
+    def get_success_url(self):
+        return reverse('production:order-detail', kwargs={'pk': self.object.pk})
 
 
-def custom_product_delete(request, pk):
-    product = get_object_or_404(CustomProduct, pk=pk)
-    order = product.order
+class OrderDeleteView(LoginRequiredMixin, DeleteView):
+    model = Order
+    template_name = 'production/order_confirm_delete.html'
+    success_url = reverse_lazy('production:order-list')
 
-    if request.method == 'POST':
-        product_name = str(product)
-        product.delete()
-        messages.success(request, f'🗑️ {product_name} беше изтрит!')
-        return redirect('production:order-detail', pk=order.pk)
-
-    return render(request, 'production/custom_product_confirm_delete.html', {
-        'product': product,
-        'order': order
-    })
+    def form_valid(self, form):
+        customer_name = self.object.customer_name
+        messages.success(self.request, f'🗑️ Поръчка #{self.object.pk} за {customer_name} беше изтрита!')
+        return super().form_valid(form)
 
 
-def ready_product_create(request, order_pk):
-    order = get_object_or_404(Order, pk=order_pk)
+# ==========================================
+# ПРОДУКТИ ПО ПОРЪЧКА (Custom Products)
+# ==========================================
 
-    if request.method == 'POST':
-        form = ReadyProductForm(request.POST)
-        if form.is_valid():
-            product = form.save(commit=False)
-            product.order = order
-            product.save()
-            messages.success(request, f'✅ {product.name} беше добавен към поръчката!')
-            return redirect('production:order-detail', pk=order.pk)
-    else:
-        form = ReadyProductForm()
+class CustomProductCreateView(LoginRequiredMixin, CreateView):
+    model = CustomProduct
+    form_class = CustomProductForm
+    template_name = 'production/custom_product_form.html'
 
-    return render(request, 'production/ready_product_form.html', {
-        'form': form,
-        'order': order,
-        'title': 'Добави готов продукт'
-    })
+    def dispatch(self, request, *args, **kwargs):
+        self.order = get_object_or_404(Order, pk=self.kwargs['order_pk'])
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['order'] = self.order
+        context['title'] = 'Добави прозорец/врата'
+        return context
+
+    def form_valid(self, form):
+        product = form.save(commit=False)
+        product.order = self.order
+
+        parts_config = []
+        parts_count = product.parts_count
+
+        for i in range(1, parts_count + 1):
+            part_type = self.request.POST.get(f'part_{i}_type', 'fix')
+            parts_config.append({
+                'position': i,
+                'type': part_type
+            })
+
+        product.parts_config = parts_config
+
+        if not product.is_equal_parts and parts_count > 1:
+            custom_widths = {}
+            for i in range(1, parts_count):
+                width_value = self.request.POST.get(f'part_{i}_width')
+                if width_value:
+                    custom_widths[f'part{i}_width'] = int(width_value)
+            product.custom_widths = custom_widths
+        else:
+            product.custom_widths = {}
+
+        openable_count = sum(1 for part in parts_config if part['type'] == 'open')
+        product.openable_sashes = openable_count
+        product.total_sashes = parts_count
+
+        product.save()
+        form.save_m2m()
+        messages.success(self.request, f'✅ {product.get_product_type_display()} беше добавен към поръчката!')
+        return redirect('production:order-detail', pk=self.order.pk)
 
 
-def ready_product_update(request, pk):
-    product = get_object_or_404(ReadyProduct, pk=pk)
+class CustomProductUpdateView(LoginRequiredMixin, UpdateView):
+    model = CustomProduct
+    form_class = CustomProductForm
+    template_name = 'production/custom_product_form.html'
 
-    if request.method == 'POST':
-        form = ReadyProductForm(request.POST, instance=product)
-        if form.is_valid():
-            form.save()
-            messages.success(request, f'✅ {product.name} беше актуализиран!')
-            return redirect('production:order-detail', pk=product.order.pk)
-    else:
-        form = ReadyProductForm(instance=product)
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['order'] = self.object.order
+        context['title'] = 'Редактирай продукт'
+        return context
 
-    return render(request, 'production/ready_product_form.html', {
-        'form': form,
-        'product': product,
-        'order': product.order,
-        'title': 'Редактирай готов продукт'
-    })
+    def form_valid(self, form):
+        product = form.save(commit=False)
+
+        parts_config = []
+        parts_count = product.parts_count
+
+        for i in range(1, parts_count + 1):
+            part_type = self.request.POST.get(f'part_{i}_type', 'fix')
+            parts_config.append({
+                'position': i,
+                'type': part_type
+            })
+
+        product.parts_config = parts_config
+
+        if not product.is_equal_parts and parts_count > 1:
+            custom_widths = {}
+            for i in range(1, parts_count):
+                width_value = self.request.POST.get(f'part_{i}_width')
+                if width_value:
+                    custom_widths[f'part{i}_width'] = int(width_value)
+            product.custom_widths = custom_widths
+        else:
+            product.custom_widths = {}
+
+        openable_count = sum(1 for part in parts_config if part['type'] == 'open')
+        product.openable_sashes = openable_count
+        product.total_sashes = parts_count
+
+        product.save()
+        form.save_m2m()
+        messages.success(self.request, f'✅ {product.get_product_type_display()} беше актуализиран!')
+        return redirect('production:order-detail', pk=product.order.pk)
 
 
-def ready_product_delete(request, pk):
-    product = get_object_or_404(ReadyProduct, pk=pk)
-    order = product.order
+class CustomProductDeleteView(LoginRequiredMixin, DeleteView):
+    model = CustomProduct
+    template_name = 'production/custom_product_confirm_delete.html'
 
-    if request.method == 'POST':
-        product_name = product.name
-        product.delete()
-        messages.success(request, f'🗑️ {product_name} беше изтрит!')
-        return redirect('production:order-detail', pk=order.pk)
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['order'] = self.object.order
+        return context
 
-    return render(request, 'production/ready_product_confirm_delete.html', {
-        'product': product,
-        'order': order
-    })
+    def form_valid(self, form):
+        order_pk = self.object.order.pk
+        product_name = str(self.object)
+        self.object.delete()
+        messages.success(self.request, f'🗑️ {product_name} беше изтрит!')
+        return redirect('production:order-detail', pk=order_pk)
+
+
+# ==========================================
+# ГОТОВИ ПРОДУКТИ (Ready Products)
+# ==========================================
+
+class ReadyProductCreateView(LoginRequiredMixin, CreateView):
+    model = ReadyProduct
+    form_class = ReadyProductForm
+    template_name = 'production/ready_product_form.html'
+
+    def dispatch(self, request, *args, **kwargs):
+        self.order = get_object_or_404(Order, pk=self.kwargs['order_pk'])
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['order'] = self.order
+        context['title'] = 'Добави готов продукт'
+        return context
+
+    def form_valid(self, form):
+        product = form.save(commit=False)
+        product.order = self.order
+        product.save()
+        messages.success(self.request, f'✅ {product.name} беше добавен към поръчката!')
+        return redirect('production:order-detail', pk=self.order.pk)
+
+
+class ReadyProductUpdateView(LoginRequiredMixin, UpdateView):
+    model = ReadyProduct
+    form_class = ReadyProductForm
+    template_name = 'production/ready_product_form.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['order'] = self.object.order
+        context['title'] = 'Редактирай готов продукт'
+        return context
+
+    def form_valid(self, form):
+        product = form.save()
+        messages.success(self.request, f'✅ {product.name} беше актуализиран!')
+        return redirect('production:order-detail', pk=product.order.pk)
+
+
+class ReadyProductDeleteView(LoginRequiredMixin, DeleteView):
+    model = ReadyProduct
+    template_name = 'production/ready_product_confirm_delete.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['order'] = self.object.order
+        return context
+
+    def form_valid(self, form):
+        order_pk = self.object.order.pk
+        product_name = self.object.name
+        self.object.delete()
+        messages.success(self.request, f'🗑️ {product_name} беше изтрит!')
+        return redirect('production:order-detail', pk=order_pk)
+
+
+# ==========================================
+# REST API ENDPOINTS (Django Rest Framework)
+# ==========================================
+class OrderAPIView(APIView):
+    """
+    API Endpoint, който връща всички поръчки на логнатия потребител в JSON формат.
+    Ако потребителят е Staff/Admin, връща всички поръчки.
+    """
+    permission_classes = [IsAuthenticated]  # Само логнати потребители имат достъп!
+
+    def get(self, request):
+        # 1. Извличаме поръчките според ролята
+        if request.user.role in ['Admin', 'Staff']:
+            orders = Order.objects.all().order_by('-created_at')
+        else:
+            orders = Order.objects.filter(customer=request.user).order_by('-created_at')
+        serializer = OrderSerializer(orders, many=True)
+        return Response(serializer.data)
+

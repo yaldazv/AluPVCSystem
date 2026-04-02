@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - AluPVC System{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-5 mb-5 fade-in">
+    <div class="col-md-8 col-lg-6">
+        <div class="card shadow-lg border-0 rounded-3">
+            <div class="card-header bg-success bg-gradient text-white py-3 text-center">
+                <h3 class="mb-0"><i class="bi bi-ui-radios"></i> {{ title|default:"Заяви оглед / Оферта" }}</h3>
+            </div>
+            
+            <div class="card-body p-4 p-md-5">
+                <div class="alert alert-info mb-4">
+                    <i class="bi bi-info-circle-fill"></i> Моля, опишете от какво имате нужда и оставете координати. Наш екип ще се свърже с вас за насрочване на безплатен оглед и вземане на точни размери!
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    {% for field in form %}
+                        <div class="mb-4">
+                            <label for="{{ field.id_for_label }}" class="form-label fw-bold text-dark">
+                                {{ field.label }}
+                                {% if field.field.required %}<span class="text-danger">*</span>{% endif %}
+                            </label>
+                            
+                            {{ field }}
+                            
+                            {% if field.help_text %}
+                                <div class="form-text text-muted fst-italic mt-1"><i class="bi bi-arrow-return-right"></i> {{ field.help_text }}</div>
+                            {% endif %}
+                            
+                            {% for error in field.errors %}
+                                <div class="text-danger small mt-1 fw-bold"><i class="bi bi-exclamation-triangle"></i> {{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    {% endfor %}
+
+                    <div class="d-grid gap-2 mt-5">
+                        <button type="submit" class="btn btn-success btn-lg shadow-sm">
+                            <i class="bi bi-send-check-fill"></i> Изпрати заявката
+                        </button>
+                        <a href="{% url 'production:quote-list' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle"></i> Отказ
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -12,44 +12,91 @@
     </div>
 </div>
 
-<div class="row g-4 fade-in">
-    <div class="col-md-4">
-        <div class="card feature-card h-100">
-            <div class="card-body text-center">
-                <i class="bi bi-box-seam feature-icon text-primary"></i>
-                <h4 class="card-title gradient-text">Материали</h4>
-                <p class="card-text text-muted">Управление на складови наличности и материали</p>
-                <a href="{% url 'material_list' %}" class="btn btn-primary mt-3">
-                    <i class="bi bi-arrow-right-circle"></i> Виж материали
-                </a>
-            </div>
-        </div>
+{% if user.is_authenticated %}
+    <div class="alert alert-info text-center fade-in mb-4">
+        Здравейте, <strong>{{ user.username }}</strong>! Вие сте влезли с роля: <strong>{{ user.role }}</strong>.
     </div>
 
-    <div class="col-md-4">
-        <div class="card feature-card h-100">
-            <div class="card-body text-center">
-                <i class="bi bi-clipboard-check feature-icon text-success"></i>
-                <h4 class="card-title gradient-text">Поръчки</h4>
-                <p class="card-text text-muted">Създаване и проследяване на поръчки и продукти</p>
-                <a href="{% url 'production:order-list' %}" class="btn btn-success mt-3">
-                    <i class="bi bi-arrow-right-circle"></i> Виж поръчки
-                </a>
+    <div class="row g-4 fade-in">
+        <!-- Вижда се от Admin, Staff и Supplier -->
+        {% if user.role == 'Admin' or user.role == 'Staff' or user.role == 'Supplier' %}
+        <div class="col-md-4">
+            <div class="card feature-card h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-box-seam feature-icon text-primary"></i>
+                    <h4 class="card-title gradient-text">Материали</h4>
+                    <p class="card-text text-muted">Управление на складови наличности и материали</p>
+                    <a href="{% url 'material_list' %}" class="btn btn-primary mt-3">
+                        <i class="bi bi-arrow-right-circle"></i> Виж материали
+                    </a>
+                </div>
             </div>
         </div>
+        {% endif %}
+
+        <!-- ЗАЯВКИ ЗА ОГЛЕД: Виждат се от Admin, Staff и Customer -->
+        {% if user.role != 'Supplier' %}
+        <div class="col-md-4">
+            <div class="card feature-card h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-journal-text feature-icon text-warning"></i>
+                    <h4 class="card-title gradient-text">Заявки за оглед</h4>
+                    <p class="card-text text-muted">Заявете безплатен оглед и вземане на размери</p>
+                    <a href="{% url 'production:quote-list' %}" class="btn btn-warning mt-3 text-dark">
+                        <i class="bi bi-arrow-right-circle"></i> Виж заявките
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- ПОРЪЧКИ: Виждат се само от вътрешния персонал и клиенти, но с различен текст -->
+        {% if user.role != 'Supplier' %}
+        <div class="col-md-4">
+            <div class="card feature-card h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-clipboard-check feature-icon text-success"></i>
+                    <h4 class="card-title gradient-text">Поръчки</h4>
+                    <p class="card-text text-muted">
+                        {% if user.role == 'Customer' %}Проследяване на вашите поръчки в производство{% else %}Създаване и проследяване на поръчки{% endif %}
+                    </p>
+                    <a href="{% url 'production:order-list' %}" class="btn btn-success mt-3">
+                        <i class="bi bi-arrow-right-circle"></i> Виж поръчки
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Вижда се САМО от вътрешния персонал (Admin, Staff) -->
+        {% if user.role == 'Admin' or user.role == 'Staff' %}
+        <div class="col-md-4">
+            <div class="card feature-card h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-calendar-event feature-icon text-info"></i>
+                    <h4 class="card-title gradient-text">Монтажи</h4>
+                    <p class="card-text text-muted">Планиране и организация на монтажи</p>
+                    <a href="{% url 'scheduling:installation-list' %}" class="btn btn-info mt-3">
+                        <i class="bi bi-arrow-right-circle"></i> Виж монтажи
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
     </div>
 
-    <div class="col-md-4">
-        <div class="card feature-card h-100">
-            <div class="card-body text-center">
-                <i class="bi bi-calendar-event feature-icon text-info"></i>
-                <h4 class="card-title gradient-text">Монтажи</h4>
-                <p class="card-text text-muted">Планиране и организация на монтажи</p>
-                <a href="{% url 'scheduling:installation-list' %}" class="btn btn-info mt-3">
-                    <i class="bi bi-arrow-right-circle"></i> Виж монтажи
-                </a>
-            </div>
+{% else %}
+    <!-- Изглед за нерегистрирани/нелогнати потребители -->
+    <div class="text-center fade-in mt-5">
+        <h3 class="mb-4">Моля, влезте в профила си, за да продължите</h3>
+        <div class="d-flex justify-content-center gap-3">
+            <a href="{% url 'login' %}" class="btn btn-primary btn-lg px-5">
+                <i class="bi bi-box-arrow-in-right"></i> Вход
+            </a>
+            <a href="{% url 'register' %}" class="btn btn-outline-secondary btn-lg px-5">
+                <i class="bi bi-person-plus"></i> Регистрация
+            </a>
         </div>
     </div>
-</div>
+{% endif %}
 {% endblock %}

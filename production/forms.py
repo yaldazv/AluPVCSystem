@@ -1,8 +1,36 @@
 from django import forms
 from django.core.exceptions import ValidationError
-from .models import Order, CustomProduct, ReadyProduct
+from .models import Order, CustomProduct, ReadyProduct, QuoteRequest
 from inventory.models import Material, Category
 import re
+
+
+class QuoteRequestForm(forms.ModelForm):
+    class Meta:
+        model = QuoteRequest
+        fields = ['description', 'address', 'phone_number']
+
+        widgets = {
+            'description': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 4,
+                'placeholder': 'Напр. 2 прозореца за спалня, 1 балконска врата. Приблизителни размери...'
+            }),
+            'address': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Град, улица, номер...'
+            }),
+            'phone_number': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': '08...'
+            }),
+        }
+
+        labels = {
+            'description': 'Какво желаете да бъде изработено?',
+            'address': 'Адрес за оглед',
+            'phone_number': 'Телефон за връзка',
+        }
 
 
 class OrderForm(forms.ModelForm):

@@ -1,31 +1,92 @@
 from django.db import models
 from django.core.validators import MinValueValidator, MinLengthValidator
 from django.core.exceptions import ValidationError
+from django.conf import settings  # За да вземем CustomUser модела
 from inventory.models import Material, Category
 from .services import ProductionService
 
 
+class QuoteRequest(models.Model):
+
+    STATUS_CHOICES = [
+        ('pending', 'Очаква обработка (Нова)'),
+        ('scheduled', 'Насрочен оглед'),
+        ('measured', 'Взети размери (Чака оферта)'),
+        ('ordered', 'Превърната в поръчка'),
+        ('rejected', 'Отказана'),
+    ]
+
+    # Свързваме заявката с реалния потребител, който я е пуснал
+    customer = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='quote_requests',
+        verbose_name="Клиент"
+    )
+
+    description = models.TextField(
+        verbose_name="Описание на желанията",
+        help_text="Опишете накратко какво желаете (напр. 2 прозореца за спалня, 1 балконска врата)"
+    )
+    address = models.CharField(max_length=255, verbose_name="Адрес за оглед/монтаж")
+    phone_number = models.CharField(max_length=20, verbose_name="Телефон за връзка")
+
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='pending',
+        verbose_name="Статус"
+    )
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата на заявката")
+
+    def __str__(self):
+        return f"Заявка #{self.id} от {self.customer.username} - {self.get_status_display()}"
+
+    class Meta:
+        verbose_name = "Заявка за оферта"
+        verbose_name_plural = "Заявки за оферти"
+        ordering = ['-created_at']
+
+
+# --- След това обнови началото на твоя съществуващ модел Order ---
 class Order(models.Model):
     STATUS_CHOICES = [
-        ('pending', 'Чакаща'),
+        ('pending', 'Чакаща производство'),
         ('in_production', 'В производство'),
         ('ready', 'Готова за монтаж'),
         ('completed', 'Завършена'),
         ('cancelled', 'Отказана'),
     ]
 
-    customer_name = models.CharField(
-        max_length=100,
-        verbose_name="Клиент",
-        validators=[MinLengthValidator(2)]
+    # ДОБАВЯМЕ: Връзка към заявката (ако поръчката произлиза от заявка)
+    quote_request = models.OneToOneField(
+        QuoteRequest,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='order',
+        verbose_name="Базирана на заявка"
     )
-    customer_phone = models.CharField(max_length=20, verbose_name="Телефон")
-    delivery_address = models.CharField(max_length=255, verbose_name="Адрес за монтаж")
+
+    # Заменяме обикновеното текстово поле с реална връзка към потребителя(клиента)
+    customer = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name='orders',
+        verbose_name="Потребител(Клиент)",
+        null=True
+    )
+
+    # Оставяме тези в случай че се поръчва на място и са нужни
+    customer_name = models.CharField(max_length=100, verbose_name="Име на клиент (ако не е рег.)", blank=True,
+                                     null=True)
+    customer_phone = models.CharField(max_length=20, verbose_name="Телефон", blank=True, null=True)
+    delivery_address = models.CharField(max_length=255, verbose_name="Адрес за монтаж", blank=True, null=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending', verbose_name="Статус")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата на създаване")
 
     def __str__(self):
-        return f"Поръчка #{self.id} - {self.customer_name}"
+        name = self.customer.username if self.customer else self.customer_name
+        return f"Поръчка #{self.id} - {name}"
 
     class Meta:
         verbose_name = "Поръчка"

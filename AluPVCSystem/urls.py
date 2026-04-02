@@ -18,12 +18,14 @@ from django.contrib import admin
 from django.urls import path, include
 from django.views.generic import TemplateView
 
+from core.views import home_view
+
 urlpatterns = [
     path('', TemplateView.as_view(template_name='home.html'), name='home'),
     path('admin/', admin.site.urls),
     path('materials/', include('inventory.urls')),
     path('production/', include('production.urls')),
     path('scheduling/', include('scheduling.urls')),
-
-
+    path('', home_view, name='home'),
+    path('accounts/', include('accounts.urls')),
 ]

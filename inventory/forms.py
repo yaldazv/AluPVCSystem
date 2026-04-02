@@ -89,13 +89,17 @@ class MaterialForm(forms.ModelForm):
             'profile_width': 'Ширина на профила в мм (70, 82, 45 и т.н.)',
         }
 
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Полето "Име" е незадължително - ще се генерира автоматично
         self.fields['name'].required = False
         self.fields['name'].widget.attrs['placeholder'] = 'Ще се генерира автоматично ако е празно'
         self.fields['name'].help_text = 'Оставете празно за автоматично генериране'
+
+
+        if self.instance and self.instance.pk:
+            self.fields['material_type'].disabled = True
+            self.fields['material_type'].help_text = "Не може да променяте типа на вече създаден материал."
 
     def clean_name(self):
         name = self.cleaned_data.get('name')

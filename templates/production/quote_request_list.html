@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+
+{% block title %}Заявки за оферти - AluPVC System{% endblock %}
+
+{% block content %}
+<div class="container mt-4 fade-in">
+    <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
+        <h2 class="mb-0 text-success">
+            <i class="bi bi-journal-text"></i> 
+            {% if user.role in "Admin,Staff" %}Всички заявки от клиенти{% else %}Моите заявки за оглед{% endif %}
+        </h2>
+        {% if user.role == "Customer" %}
+            <a href="{% url 'production:quote-create' %}" class="btn btn-success btn-lg shadow-sm">
+                <i class="bi bi-plus-circle"></i> Нова заявка
+            </a>
+        {% endif %}
+    </div>
+
+    <div class="card shadow-sm border-0 rounded-3">
+        <div class="card-body p-0">
+            {% if quotes %}
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped align-middle mb-0">
+                        <thead class="table-dark">
+                            <tr>
+                                <th class="ps-4">№</th>
+                                {% if user.role in "Admin,Staff" %}
+                                    <th>Клиент</th>
+                                {% endif %}
+                                <th>Телефон</th>
+                                <th>Адрес</th>
+                                <th>Статус</th>
+                                <th>Дата</th>
+                                {% if user.role in "Admin,Staff" %}
+                                <th>Действие</th>
+                                {% endif %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for quote in quotes %}
+                                <tr>
+                                    <td class="ps-4 fw-bold">#{{ quote.id }}</td>
+                                    {% if user.role in "Admin,Staff" %}
+                                        <td><span class="badge bg-secondary">{{ quote.customer.username }}</span></td>
+                                    {% endif %}
+                                    <td>{{ quote.phone_number }}</td>
+                                    <td><small>{{ quote.address }}</small></td>
+                                    <td>
+                                        {% if quote.status == 'pending' %}
+                                            <span class="badge bg-warning text-dark"><i class="bi bi-clock-history"></i> Нова / Чакаща</span>
+                                        {% elif quote.status == 'scheduled' %}
+                                            <span class="badge bg-info text-dark"><i class="bi bi-calendar-check"></i> Насрочен оглед</span>
+                                        {% elif quote.status == 'measured' %}
+                                            <span class="badge bg-primary"><i class="bi bi-rulers"></i> Взети размери</span>
+                                        {% elif quote.status == 'ordered' %}
+                                            <span class="badge bg-success"><i class="bi bi-check2-all"></i> Превърната в поръчка</span>
+                                        {% else %}
+                                            <span class="badge bg-danger"><i class="bi bi-x-circle"></i> Отказана</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ quote.created_at|date:"d.m.Y H:i" }}</td>
+                                    
+                                    {% if user.role in "Admin,Staff" %}
+                                    <td>
+                                        <!-- TODO: Тук ще добавим бутон за създаване на поръчка базирана на тази заявка -->
+                                        <button class="btn btn-sm btn-outline-primary" title="Преглед"><i class="bi bi-eye"></i></button>
+                                    </td>
+                                    {% endif %}
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="p-5 text-center bg-light rounded-3">
+                    <i class="bi bi-inbox text-muted" style="font-size: 3rem;"></i>
+                    <h4 class="mt-3 text-muted">
+                        {% if user.role == "Customer" %}Все още нямате пуснати заявки.{% else %}Няма постъпили заявки.{% endif %}
+                    </h4>
+                    {% if user.role == "Customer" %}
+                    <a href="{% url 'production:quote-create' %}" class="btn btn-success mt-3">Направете първата си заявка</a>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

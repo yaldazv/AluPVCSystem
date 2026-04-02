@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+
+{% block title %}Регистрация - AluPVC System{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center fade-in mt-4 mb-5">
+    <div class="col-md-6">
+        <div class="card shadow">
+            <div class="card-header bg-success text-white text-center py-3">
+                <h3 class="mb-0"><i class="bi bi-person-plus"></i> Регистрация</h3>
+            </div>
+            <div class="card-body p-4">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <!-- Използваме вградения начин на работа с форми, но ги добавяме с малко стил -->
+                    {% for field in form %}
+                        <div class="mb-3">
+                            <label for="{{ field.id_for_label }}" class="form-label fw-bold">{{ field.label }}</label>
+                            <!-- Добавяме bootstrap class към самото поле -->
+                            {{ field }}
+                            {% if field.help_text %}
+                                <div class="form-text text-muted small">{{ field.help_text }}</div>
+                            {% endif %}
+                            {% for error in field.errors %}
+                                <div class="text-danger small mt-1">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    {% endfor %}
+
+                    <div class="d-grid mt-4">
+                        <button type="submit" class="btn btn-success btn-lg">Създай профил</button>
+                    </div>
+                </form>
+            </div>
+            <div class="card-footer text-center py-3">
+                Вече имате акаунт? <a href="{% url 'login' %}" class="text-success text-decoration-none fw-bold">Влезте от тук</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        let inputs = document.querySelectorAll("input, select");
+        inputs.forEach(function(input) {
+            if (input.type !== "checkbox" && input.type !== "submit") {
+                input.classList.add("form-control");
+            }
+        });
+    });
+</script>
+{% endblock %}

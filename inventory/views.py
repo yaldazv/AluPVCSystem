@@ -1,147 +1,127 @@
-from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse_lazy
+from django.shortcuts import get_object_or_404
+from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib import messages
 from .models import Material, Supplier, Delivery
 from .forms import MaterialForm, SupplierForm, DeliveryForm
 
 
-def material_list(request):
-    """Показва всички материали"""
-    materials = Material.objects.all().order_by('material_type', 'name')
+# ============ MATERIAL VIEWS ============
 
-    context = {
-        'materials': materials,
-    }
-    return render(request, 'inventory/material_list.html', context)
+class MaterialListView(LoginRequiredMixin, ListView):
+    model = Material
+    template_name = 'inventory/material_list.html'
+    context_object_name = 'materials'
 
-
-def material_create(request):
-    """Създава нов материал (без количество - то се добавя през доставки)"""
-    if request.method == 'POST':
-        form = MaterialForm(request.POST)
-        if form.is_valid():
-            material = form.save(commit=False)
-            material.quantity_in_stock = 0  # Започва с 0, ще се добави през доставки
-            material.save()
-            form.save_m2m()  # За ManyToMany полета
-            messages.success(request,
-                             f'Материалът "{material.name}" е добавен успешно! Сега можете да добавите доставка.')
-            return redirect('material_list')
-    else:
-        form = MaterialForm()
-
-    context = {
-        'form': form,
-        'title': 'Добави нов материал',
-    }
-    return render(request, 'inventory/material_form.html', context)
+    def get_queryset(self):
+        return Material.objects.all().order_by('material_type', 'name')
 
 
-def material_update(request, pk):
-    """Редактира съществуващ материал"""
-    material = get_object_or_404(Material, pk=pk)
+class MaterialDetailView(LoginRequiredMixin, DetailView):
+    model = Material
+    template_name = 'inventory/material_detail.html'
+    context_object_name = 'material'
 
-    if request.method == 'POST':
-        form = MaterialForm(request.POST, instance=material)
-        if form.is_valid():
-            material = form.save()
-            messages.success(request, f'Материалът "{material.name}" е обновен!')
-            return redirect('material_list')
-    else:
-        form = MaterialForm(instance=material)
-
-    context = {
-        'form': form,
-        'material': material,
-        'title': f'Редактирай {material.name}',
-    }
-    return render(request, 'inventory/material_form.html', context)
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Взимаме последните 10 доставки за този материал
+        context['deliveries'] = self.object.deliveries.all()[:10]
+        return context
 
 
-def material_delete(request, pk):
-    """Изтрива материал"""
-    material = get_object_or_404(Material, pk=pk)
+class MaterialCreateView(LoginRequiredMixin, CreateView):
+    model = Material
+    form_class = MaterialForm
+    template_name = 'inventory/material_form.html'
+    success_url = reverse_lazy('material_list')
 
-    if request.method == 'POST':
-        material_name = material.name
-        material.delete()
-        messages.success(request, f'Материалът "{material_name}" е изтрит!')
-        return redirect('material_list')
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = 'Добави нов материал'
+        return context
 
-    context = {
-        'material': material,
-    }
-    return render(request, 'inventory/material_confirm_delete.html', context)
+    def form_valid(self, form):
+        material = form.save(commit=False)
+        material.quantity_in_stock = 0
+        material.save()
+        form.save_m2m()  # Задължително за ManyToMany полета
+        messages.success(self.request,
+                         f'Материалът "{material.name}" е добавен успешно! Сега можете да добавите доставка.')
+        return super().form_valid(form)
 
 
-def material_detail(request, pk):
-    """Показва детайли за един материал + история на доставките"""
-    material = get_object_or_404(Material, pk=pk)
-    deliveries = material.deliveries.all()[:10]  # Последните 10 доставки
+class MaterialUpdateView(LoginRequiredMixin, UpdateView):
+    model = Material
+    form_class = MaterialForm
+    template_name = 'inventory/material_form.html'
+    success_url = reverse_lazy('material_list')
 
-    context = {
-        'material': material,
-        'deliveries': deliveries,
-    }
-    return render(request, 'inventory/material_detail.html', context)
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = f'Редактирай {self.object.name}'
+        return context
+
+    def form_valid(self, form):
+        messages.success(self.request, f'Материалът "{self.object.name}" е обновен!')
+        return super().form_valid(form)
+
+
+class MaterialDeleteView(LoginRequiredMixin, DeleteView):
+    model = Material
+    template_name = 'inventory/material_confirm_delete.html'
+    success_url = reverse_lazy('material_list')
+
+    def form_valid(self, form):
+        messages.success(self.request, f'Материалът "{self.object.name}" е изтрит!')
+        return super().form_valid(form)
 
 
 # ============ SUPPLIER VIEWS ============
 
-def supplier_list(request):
-    """Показва всички доставчици"""
-    suppliers = Supplier.objects.all().order_by('name')
+class SupplierListView(LoginRequiredMixin, ListView):
+    model = Supplier
+    template_name = 'inventory/supplier_list.html'
+    context_object_name = 'suppliers'
 
-    context = {
-        'suppliers': suppliers,
-    }
-    return render(request, 'inventory/supplier_list.html', context)
+    def get_queryset(self):
+        return Supplier.objects.all().order_by('name')
 
 
-def supplier_create(request):
-    """Добавяне на нов доставчик"""
-    if request.method == 'POST':
-        form = SupplierForm(request.POST)
-        if form.is_valid():
-            form.save()
-            return redirect('supplier_list')
-    else:
-        form = SupplierForm()
-
-    context = {
-        'form': form,
-    }
-    return render(request, 'inventory/supplier_form.html', context)
+class SupplierCreateView(LoginRequiredMixin, CreateView):
+    model = Supplier
+    form_class = SupplierForm
+    template_name = 'inventory/supplier_form.html'
+    success_url = reverse_lazy('supplier_list')
 
 
 # ============ DELIVERY VIEWS ============
 
-def delivery_list(request):
-    """Показва всички доставки"""
-    deliveries = Delivery.objects.all().select_related('material', 'supplier')
+class DeliveryListView(LoginRequiredMixin, ListView):
+    model = Delivery
+    template_name = 'inventory/delivery_list.html'
+    context_object_name = 'deliveries'
 
-    context = {
-        'deliveries': deliveries,
-    }
-    return render(request, 'inventory/delivery_list.html', context)
+    def get_queryset(self):
+        return Delivery.objects.all().select_related('material', 'supplier')
 
 
-def delivery_create(request):
-    """Създава нова доставка (автоматично увеличава наличността)"""
-    if request.method == 'POST':
-        form = DeliveryForm(request.POST)
-        if form.is_valid():
-            delivery = form.save()
-            messages.success(
-                request,
-                f'Доставката е регистрирана! Добавени {delivery.quantity} {delivery.material.unit} '
-                f'от {delivery.material.name}. Обща стойност: {delivery.total_price:.2f} лв'
-            )
-            return redirect('delivery_list')
-    else:
-        form = DeliveryForm()
+class DeliveryCreateView(LoginRequiredMixin, CreateView):
+    model = Delivery
+    form_class = DeliveryForm
+    template_name = 'inventory/delivery_form.html'
+    success_url = reverse_lazy('delivery_list')
 
-    context = {
-        'form': form,
-        'title': 'Регистрирай доставка',
-    }
-    return render(request, 'inventory/delivery_form.html', context)
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = 'Регистрирай доставка'
+        return context
+
+    def form_valid(self, form):
+        delivery = form.save()
+        messages.success(
+            self.request,
+            f'Доставката е регистрирана! Добавени {delivery.quantity} {delivery.material.unit} '
+            f'от {delivery.material.name}. Обща стойност: {delivery.total_price:.2f} лв'
+        )
+        return super().form_valid(form)
