@@ -1,5 +1,7 @@
 from django.db import models
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, Group
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 
 class CustomUser(AbstractUser):
@@ -19,3 +21,26 @@ class CustomUser(AbstractUser):
 
     def __str__(self):
         return f"{self.username} ({self.role})"
+
+    def save(self, *args, **kwargs):
+        if self.role == self.RoleChoices.ADMIN:
+            self.is_staff = True
+            self.is_superuser = True
+
+        elif self.role == self.RoleChoices.STAFF:
+            self.is_staff = True
+            self.is_superuser = False
+        else:
+
+            self.is_staff = False
+            self.is_superuser = False
+
+        super().save(*args, **kwargs)
+
+
+@receiver(post_save, sender=CustomUser)
+def assign_user_to_group(sender, instance, created, **kwargs):
+    if instance.role:
+        group, _ = Group.objects.get_or_create(name=instance.role)
+        instance.groups.clear()
+        instance.groups.add(group)

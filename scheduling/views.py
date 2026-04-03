@@ -2,15 +2,12 @@ from django.shortcuts import render, redirect, get_object_or_404
 from datetime import date
 from .models import Installation
 from .forms import InstallationForm
-
+from production.models import Order  # ДОБАВЯМЕ ТОВА
 
 def installation_list(request):
     today = date.today()
-
-    # Определяме активния таб (по подразбиране 'upcoming')
     active_tab = request.GET.get('tab', 'upcoming')
 
-    # Броячи за всеки таб
     past_count = Installation.objects.filter(installation_date__lt=today).count()
     today_count = Installation.objects.filter(installation_date=today).count()
     upcoming_count = Installation.objects.filter(installation_date__gt=today).count()
@@ -22,6 +19,8 @@ def installation_list(request):
     else:  # upcoming
         installations = Installation.objects.filter(installation_date__gt=today).order_by('installation_date')
 
+    unscheduled_orders = Order.objects.filter(status='ready', installations__isnull=True)
+
     context = {
         'installations': installations,
         'active_tab': active_tab,
@@ -29,6 +28,7 @@ def installation_list(request):
         'past_count': past_count,
         'today_count': today_count,
         'upcoming_count': upcoming_count,
+        'unscheduled_orders': unscheduled_orders,  # ПОДАВАМЕ ГИ ТУК
     }
     return render(request, 'scheduling/installation_list.html', context)
 
@@ -39,13 +39,24 @@ def installation_detail(request, pk):
 
 
 def installation_create(request):
+    order_id = request.GET.get('order_id')
+
     if request.method == 'POST':
         form = InstallationForm(request.POST)
         if form.is_valid():
             form.save()
             return redirect('scheduling:installation-list')
     else:
-        form = InstallationForm()
+        initial_data = {}
+        if order_id:
+            try:
+                order = Order.objects.get(id=order_id)
+                initial_data['orders'] = [order.id]
+                initial_data['address'] = order.delivery_address
+            except Order.DoesNotExist:
+                pass
+
+        form = InstallationForm(initial=initial_data)
 
     return render(request, 'scheduling/installation_form.html', {'form': form, 'action': 'Добавяне'})
 

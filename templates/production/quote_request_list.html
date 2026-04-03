@@ -62,8 +62,9 @@
                                     
                                     {% if user.role in "Admin,Staff" %}
                                     <td>
-                                        <!-- TODO: Тук ще добавим бутон за създаване на поръчка базирана на тази заявка -->
-                                        <button class="btn btn-sm btn-outline-primary" title="Преглед"><i class="bi bi-eye"></i></button>
+                                        <a href="{% url 'production:quote-detail' quote.id %}" class="btn btn-sm btn-outline-primary" title="Детайли и управление">
+                                            <i class="bi bi-eye"></i> Преглед
+                                        </a>
                                     </td>
                                     {% endif %}
                                 </tr>

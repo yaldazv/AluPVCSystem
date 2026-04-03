@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+
+{% block title %}Детайли на заявка #{{ quote.id }} - AluPVC System{% endblock %}
+
+{% block content %}
+<div class="container mt-4 fade-in">
+    <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
+        <h2 class="mb-0 text-success">
+            <i class="bi bi-journal-text"></i> Заявка №{{ quote.id }}
+        </h2>
+        <div>
+            {% if user.role in "Admin,Staff" %}
+                <a href="{% url 'production:quote-update' quote.id %}" class="btn btn-warning me-2">
+                    <i class="bi bi-pencil-square"></i> Редактирай статус
+                </a>
+            {% endif %}
+            <a href="{% url 'production:quote-list' %}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Назад
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card shadow-sm mb-4 border-0">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0"><i class="bi bi-info-circle text-primary"></i> Описание на заданието</h5>
+                </div>
+                <div class="card-body">
+                    <p class="fs-5">{{ quote.description|linebreaks }}</p>
+                </div>
+            </div>
+
+            {% if quote.notes %}
+            <div class="card shadow-sm border-0 border-start border-warning border-5">
+                <div class="card-body bg-light">
+                    <h6 class="mb-2 text-warning"><i class="bi bi-sticky"></i> Бележки от фирмата:</h6>
+                    <p class="mb-0">{{ quote.notes|linebreaks }}</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-light py-3">
+                    <h5 class="mb-0">Данни за контакт</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                            <span class="text-muted">Статус:</span>
+                            <span class="fw-bold">
+                                {% if quote.status == 'pending' %}
+                                    <span class="badge bg-warning text-dark">Нова / Чакаща</span>
+                                {% elif quote.status == 'scheduled' %}
+                                    <span class="badge bg-info text-dark">Насрочен оглед</span>
+                                {% elif quote.status == 'measured' %}
+                                    <span class="badge bg-primary">Взети размери</span>
+                                {% elif quote.status == 'ordered' %}
+                                    <span class="badge bg-success">Превърната в поръчка</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Отказана</span>
+                                {% endif %}
+                            </span>
+                        </li>
+                        <li class="list-group-item px-0">
+                            <small class="text-muted d-block">Клиент</small>
+                            <span class="fw-bold">{{ quote.customer.username }}</span>
+                        </li>
+                        <li class="list-group-item px-0">
+                            <small class="text-muted d-block">Телефон</small>
+                            <a href="tel:{{ quote.phone_number }}" class="text-decoration-none fw-bold">{{ quote.phone_number }}</a>
+                        </li>
+                        <li class="list-group-item px-0">
+                            <small class="text-muted d-block">Адрес за оглед</small>
+                            <span>{{ quote.address }}</span>
+                        </li>
+                        <li class="list-group-item px-0">
+                            <small class="text-muted d-block">Дата на създаване</small>
+                            <span>{{ quote.created_at|date:"d.m.Y H:i" }}</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

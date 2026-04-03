@@ -45,6 +45,36 @@ class QuoteRequestListView(LoginRequiredMixin, ListView):
         return QuoteRequest.objects.filter(customer=self.request.user).order_by('-created_at')
 
 
+class QuoteRequestDetailView(LoginRequiredMixin, DetailView):
+    model = QuoteRequest
+    template_name = 'production/quote_request_detail.html'
+    context_object_name = 'quote'
+
+    def get_queryset(self):
+        # Ако е клиент, може да вижда само своите заявки. Ако е админ/персонал - всички.
+        if self.request.user.role in ['Admin', 'Staff']:
+            return QuoteRequest.objects.all()
+        return QuoteRequest.objects.filter(customer=self.request.user)
+
+
+class QuoteRequestUpdateView(LoginRequiredMixin, UpdateView):
+    model = QuoteRequest
+    template_name = 'production/quote_request_update.html'
+    # Персоналът може да променя само тези две полета:
+    fields = ['status', 'notes']
+
+    def dispatch(self, request, *args, **kwargs):
+        # Само персонал може да редактира заявките
+        if request.user.role not in ['Admin', 'Staff'] and not request.user.is_superuser:
+            from django.http import HttpResponseForbidden
+            return HttpResponseForbidden("Нямате права за редакция на заявки.")
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_success_url(self):
+        messages.success(self.request, f"Статусът на заявка #{self.object.id} беше обновен!")
+        return reverse('production:quote-detail', kwargs={'pk': self.object.id})
+
+
 # ==========================================
 # ПОРЪЧКИ (Orders)
 # ==========================================

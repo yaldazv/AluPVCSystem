@@ -37,6 +37,14 @@ class QuoteRequest(models.Model):
         default='pending',
         verbose_name="Статус"
     )
+
+    notes = models.TextField(
+        verbose_name="Бележки от фирмата",
+        blank=True,
+        null=True,
+        help_text="Вътрешни бележки или отговор към клиента"
+    )
+
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата на заявката")
 
     def __str__(self):
