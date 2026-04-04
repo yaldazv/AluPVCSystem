@@ -4,16 +4,23 @@
 {% block title %}{% if user.role == 'Customer' %}Моите поръчки{% else %}Всички поръчки{% endif %}{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
+<div class="container mt-4 fade-in">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1>📋 {% if user.role == 'Customer' %}Моите поръчки{% else %}Всички поръчки{% endif %}</h1>
 
-        <!-- Бутонът се вижда САМО от администрация и персонал -->
-        {% if user.role in 'Admin,Staff' %}
-        <a href="{% url 'production:order-create' %}" class="btn btn-primary">
-            ➕ Нова поръчка
-        </a>
-        {% endif %}
+        <div class="d-flex gap-2">
+            <!-- Бутонът за API (DRF) се вижда от всички (той връща собствени или всички според ролята) -->
+            <a href="{% url 'production:api-orders' %}" target="_blank" class="btn border-secondary text-secondary bg-white" title="REST API JSON Данни">
+                <i class="bi bi-braces"></i> API Данни
+            </a>
+
+            <!-- Бутонът за нова поръчка се вижда САМО от администрация и персонал -->
+            {% if user.role in 'Admin,Staff' %}
+            <a href="{% url 'production:order-create' %}" class="btn btn-primary shadow-sm">
+                ➕ Нова поръчка
+            </a>
+            {% endif %}
+        </div>
     </div>
 
     {% if messages %}
@@ -96,15 +103,20 @@
                 {% endif %}
             </p>
 
-            {% if user.role in 'Admin,Staff' %}
-            <a href="{% url 'production:order-create' %}" class="btn btn-lg btn-primary">
-                ➕ Създай поръчка
-            </a>
-            {% else %}
-             <a href="{% url 'production:quote-create' %}" class="btn btn-lg btn-warning text-dark">
-                ➕ Заяви безплатен оглед
-            </a>
-            {% endif %}
+            <div class="mt-4 gap-2 d-flex justify-content-center">
+                {% if user.role in 'Admin,Staff' %}
+                <a href="{% url 'production:order-create' %}" class="btn btn-lg btn-primary">
+                    ➕ Създай поръчка
+                </a>
+                {% else %}
+                 <a href="{% url 'production:quote-create' %}" class="btn btn-lg btn-warning text-dark">
+                    ➕ Заяви безплатен оглед
+                </a>
+                {% endif %}
+                <a href="{% url 'production:api-orders' %}" target="_blank" class="btn btn-outline-secondary btn-lg bg-white" title="REST API JSON Данни">
+                    <i class="bi bi-braces"></i> API Данни
+                </a>
+            </div>
         </div>
     {% endif %}
 </div>

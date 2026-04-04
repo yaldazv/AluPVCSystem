@@ -1,10 +1,10 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, logout
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseForbidden
 from .forms import CustomUserCreationForm, CustomUserLoginForm, AdminUserCreationForm
-
+from .models import CustomUser
 
 def register_view(request):
     if request.method == 'POST':
@@ -57,3 +57,37 @@ def logout_view(request):
     if request.method == 'POST':
         logout(request)
         return redirect('login')
+
+
+@login_required
+def pending_users_view(request):
+    """Списък с потребители, които чакат одобрение"""
+    if request.user.role not in ['Admin', 'Staff'] and not request.user.is_superuser:
+        return HttpResponseForbidden("Нямате права за достъп до тази страница.")
+
+    # Взимаме всички неактивни потребители
+    pending_users = CustomUser.objects.filter(is_active=False).order_by('-date_joined')
+    return render(request, 'accounts/pending_users.html', {'pending_users': pending_users})
+
+
+@login_required
+def approve_user_view(request, user_id):
+    if request.user.role not in ['Admin', 'Staff'] and not request.user.is_superuser:
+        return HttpResponseForbidden("Нямате права за достъп.")
+
+    if request.method == "POST":
+        user_to_approve = get_object_or_404(CustomUser, id=user_id)
+
+        action = request.POST.get('action')
+
+        if action == 'approve':
+            user_to_approve.is_active = True
+            user_to_approve.save()
+            messages.success(request, f'Потребител {user_to_approve.username} беше успешно одобрен и вече има достъп!')
+        elif action == 'reject':
+            username = user_to_approve.username
+            user_to_approve.delete()
+            messages.success(request, f'Регистрацията на {username} беше отхвърлена и изтрита.')
+
+    return redirect('pending_users')
+

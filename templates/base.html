@@ -46,6 +46,30 @@
                             </a>
                         </li>
                         {% endif %}
+
+                        <!-- Меню за управление на потребители (Само за Админ/Стаф) -->
+                        {% if user.role in 'Admin,Staff' or user.is_superuser %}
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                                <i class="bi bi-people"></i> Потребители
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'pending_users' %}">
+                                        <i class="bi bi-person-exclamation"></i> Чакащи одобрение
+                                    </a>
+                                </li>
+                                {% if user.role == 'Admin' or user.is_superuser %}
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'admin_create_user' %}">
+                                        <i class="bi bi-person-plus"></i> Добави служител
+                                    </a>
+                                </li>
+                                {% endif %}
+                            </ul>
+                        </li>
+                        {% endif %}
+
               <!-- Заявки за оглед (Вижда се от всички логнати) -->
                         <li class="nav-item">
                             <a class="nav-link" href="{% url 'production:quote-list' %}">

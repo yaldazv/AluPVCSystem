@@ -46,6 +46,12 @@ class QuoteRequest(models.Model):
     )
 
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата на заявката")
+    image = models.ImageField(
+        upload_to='quote_requests/',
+        null=True,
+        blank=True,
+        verbose_name='Снимка на обекта или скица с размери'
+                    )
 
     def __str__(self):
         return f"Заявка #{self.id} от {self.customer.username} - {self.get_status_display()}"
@@ -85,8 +91,8 @@ class Order(models.Model):
     )
 
     # Оставяме тези в случай че се поръчва на място и са нужни
-    customer_name = models.CharField(max_length=100, verbose_name="Име на клиент (ако не е рег.)", blank=True,
-                                     null=True)
+    customer_name = models.CharField(max_length=100, verbose_name="Име на клиент (ако не е рег.)", blank=True, null=True)
+    customer_email = models.EmailField(verbose_name="Имейл (ако не е регистриран)", blank=True, null=True)
     customer_phone = models.CharField(max_length=20, verbose_name="Телефон", blank=True, null=True)
     delivery_address = models.CharField(max_length=255, verbose_name="Адрес за монтаж", blank=True, null=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending', verbose_name="Статус")
@@ -268,12 +274,6 @@ class CustomProduct(models.Model):
         return (self.width * self.height) / 1_000_000
 
     def get_material_costs(self):
-        """
-        Изчислява цената само на базата на вложените материали от склада.
-        Формула: $$\sum (Material.Price \times Quantity)$$
-        """
-        # В реална ситуация тук ще импортираш ProductionService,
-        # но за простота го дефинираме вътре:
         total = 0
         # 1. Сумираме цените на всички избрани материали (дръжки, панти и т.н.)
         for material in self.materials.all():

@@ -2,6 +2,7 @@ from django import forms
 from django.core.exceptions import ValidationError
 from .models import Order, CustomProduct, ReadyProduct, QuoteRequest
 from inventory.models import Material, Category
+from django.contrib.auth import get_user_model
 import re
 
 
@@ -33,87 +34,84 @@ class QuoteRequestForm(forms.ModelForm):
         }
 
 
-class OrderForm(forms.ModelForm):
-    """
-    Форма за създаване и редакция на поръчки.
-    Включва validation за телефон и адрес.
-    """
 
+class OrderForm(forms.ModelForm):
     class Meta:
         model = Order
         fields = [
+            'customer',
             'customer_name',
             'customer_phone',
+            'customer_email',
             'delivery_address',
             'status',
         ]
 
         widgets = {
-            'customer_name': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Име на клиента',
-            }),
-            'customer_phone': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': '+359 88 123 4567 или 0888123456',
-            }),
-            'delivery_address': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'ул. "Примерна" №10, гр. София',
-            }),
-            'status': forms.Select(attrs={
-                'class': 'form-select',
-            }),
+            'customer': forms.Select(attrs={'class': 'form-select'}),
+            'customer_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Име на клиента'}),
+            'customer_phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '+359 88 123 4567'}),
+            'customer_email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'Имейл за контакт'}),
+            'delivery_address': forms.TextInput(
+                attrs={'class': 'form-control', 'placeholder': 'ул. "Примерна" №10, гр. София'}),
+            'status': forms.Select(attrs={'class': 'form-select'}),
         }
 
         labels = {
-            'customer_name': 'Име на клиент',
+            'customer': 'Регистриран клиент',
+            'customer_name': 'Име на клиент (За нерегистрирани)',
             'customer_phone': 'Телефон за контакт',
+            'customer_email': 'Имейл (За нерегистрирани)',
             'delivery_address': 'Адрес за монтаж',
             'status': 'Статус на поръчката',
         }
 
-        help_texts = {
-            'customer_phone': 'Въведете валиден телефонен номер',
-            'delivery_address': 'Пълен адрес където ще се извърши монтажа',
-        }
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        User = get_user_model()
+        # Зареждаме само потребителите, които са с роля 'Customer'
+        self.fields['customer'].queryset = User.objects.filter(role='Customer')
+        self.fields['customer'].empty_label = "--- Избери регистриран клиент ---"
+        self.fields['customer'].required = False
 
     def clean_customer_name(self):
-        """Валидация за име на клиент - минимум 2 символа, само букви и интервали"""
         name = self.cleaned_data.get('customer_name')
+        if not name:
+            return name
         if len(name) < 2:
             raise ValidationError('Името трябва да съдържа поне 2 символа!')
-        if not all(char.isalpha() or char.isspace() for char in name):
-            raise ValidationError('Името трябва да съдържа само букви!')
         return name.strip()
 
     def clean_customer_phone(self):
-        """Валидация за телефонен номер - Bulgarian format"""
         phone = self.cleaned_data.get('customer_phone')
-        # Премахва всички интервали и тирета
-        phone_cleaned = phone.replace(' ', '').replace('-', '')
+        if not phone:
+            return phone
 
-        # Проверка за Bulgarian phone patterns
-        patterns = [
-            r'^0[0-9]{9}$',  # 0888123456
-            r'^\+3590[0-9]{9}$',  # +3590888123456
-            r'^3590[0-9]{9}$',  # 3590888123456
-        ]
+        phone_cleaned = phone.replace(' ', '').replace('-', '')
+        patterns = [r'^0[0-9]{9}$', r'^\+359[0-9]{9}$', r'^359[0-9]{9}$']
 
         if not any(re.match(pattern, phone_cleaned) for pattern in patterns):
-            raise ValidationError(
-                'Моля въведете валиден телефонен номер! '
-                'Примери: 0888123456, +359888123456'
-            )
-
+            raise ValidationError('Моля въведете валиден телефонен номер! Примери: 0888123456, +359888123456')
         return phone_cleaned
 
     def clean_delivery_address(self):
-        """Валидация за адрес - минимум 10 символа"""
         address = self.cleaned_data.get('delivery_address')
+        if not address:
+            return address  # ОПРАВЯ ГРЕШКАТА ЗА NoneType (Позволяваме да е празно)
+
         if len(address) < 10:
             raise ValidationError('Адресът е твърде кратък! Въведете пълен адрес.')
         return address.strip()
+
+    def clean(self):
+        cleaned_data = super().clean()
+        customer = cleaned_data.get('customer')
+        customer_name = cleaned_data.get('customer_name')
+
+        if not customer and not customer_name:
+            raise ValidationError("Трябва или да изберете регистриран клиент, или да въведете име на клиент ръчно!")
+
+        return cleaned_data
 
 
 class OrderUpdateForm(OrderForm):

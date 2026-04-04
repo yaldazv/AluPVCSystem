@@ -177,8 +177,9 @@ class Material(models.Model):
       if self.brand:
           parts.append(f"[{self.brand}]")
       if self.color:
-          parts.append(f"({self.color})")
+          parts.append(f"- {self.color}")
       return " ".join(parts)
+
 
   class Meta:
       verbose_name = "Материал"

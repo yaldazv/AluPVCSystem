@@ -15,7 +15,8 @@
                     <i class="bi bi-info-circle-fill"></i> Моля, опишете от какво имате нужда и оставете координати. Наш екип ще се свърже с вас за насрочване на безплатен оглед и вземане на точни размери!
                 </div>
 
-                <form method="post">
+                <!-- ВАЖНО: Добавен е enctype="multipart/form-data" за качване на снимки -->
+                <form method="post" enctype="multipart/form-data">
                     {% csrf_token %}
                     
                     {% for field in form %}

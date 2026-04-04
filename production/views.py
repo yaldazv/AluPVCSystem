@@ -122,10 +122,6 @@ class OrderCreateView(LoginRequiredMixin, CreateView):
         return reverse('production:order-detail', kwargs={'pk': self.object.pk})
 
 
-from django_q.tasks import async_task  # ДОБАВИ ТОЗИ ИМПОРТ НАЙ-ГОРЕ ВЪВ ФАЙЛА (при другите импорти)
-from .tasks import send_order_ready_email  # И ТОЗИ СЪЩО
-
-
 class OrderUpdateView(LoginRequiredMixin, UpdateView):
     model = Order
     form_class = OrderUpdateForm
@@ -146,8 +142,10 @@ class OrderUpdateView(LoginRequiredMixin, UpdateView):
 
         # 3. Проверяваме дали статусът ТОКУ-ЩО е станал 'ready' (Готова за монтаж)
         if old_status != 'ready' and new_status == 'ready':
-            # Проверяваме дали имаме имейл на клиента
-            customer_email = self.object.customer.email if self.object.customer else "test@example.com"
+            customer_email = self.object.customer.email if self.object.customer else self.object.customer_email
+            if not customer_email:
+                customer_email = "test@example.com"  # fallback
+
             customer_name = self.object.customer.username if self.object.customer else (
                         self.object.customer_name or "Клиент")
 
