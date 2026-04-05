@@ -9,7 +9,8 @@ import re
 class QuoteRequestForm(forms.ModelForm):
     class Meta:
         model = QuoteRequest
-        fields = ['description', 'address', 'phone_number']
+        # ДОБАВЯМЕ 'image' ТУК
+        fields = ['description', 'address', 'phone_number', 'image']
 
         widgets = {
             'description': forms.Textarea(attrs={
@@ -25,14 +26,17 @@ class QuoteRequestForm(forms.ModelForm):
                 'class': 'form-control',
                 'placeholder': '08...'
             }),
+            'image': forms.FileInput(attrs={
+                'class': 'form-control'
+            })
         }
 
         labels = {
             'description': 'Какво желаете да бъде изработено?',
             'address': 'Адрес за оглед',
             'phone_number': 'Телефон за връзка',
+            'image': 'Снимка / Скица (по желание)'
         }
-
 
 
 class OrderForm(forms.ModelForm):
