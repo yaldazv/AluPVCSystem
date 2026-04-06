@@ -30,7 +30,7 @@
                             </div>
                         {% empty %}
                             <div class="p-4 text-center text-muted">
-                                <i class="bi bi-check-circle" style="font-size: 2rem;"></i>
+                                <i class="bi bi-check-circle display-6"></i>
                                 <p class="mt-2 mb-0">Всички готови поръчки са насрочени!</p>
                             </div>
                         {% endfor %}
@@ -96,9 +96,8 @@
                             <div class="card-body">
                                 <div class="d-flex align-items-start mb-3">
                                     <i class="bi bi-geo-alt-fill text-danger fs-4 me-2 mt-n1"></i>
-                                    <h6 class="mb-0 text-dark" style="line-height: 1.5;">{{ installation.address }}</h6>
+                                   <h6 class="mb-0 text-dark lh-base">{{ installation.address }}</h6>
                                 </div>
-
                                 <div class="mb-3">
                                     <p class="mb-1 text-muted small text-uppercase fw-bold">Свързани поръчки:</p>
                                     <div class="d-flex flex-wrap gap-1">
@@ -131,7 +130,7 @@
             {% else %}
                 <div class="card shadow-sm border-0">
                     <div class="card-body text-center py-5">
-                        <i class="bi bi-calendar-x text-muted opacity-50" style="font-size: 4rem;"></i>
+                        <i class="bi bi-calendar-x text-muted opacity-50 display-3"></i>
                         <h4 class="mt-4 text-secondary">
                             {% if active_tab == 'past' %}Няма минали монтажи
                             {% elif active_tab == 'today' %}Няма монтажи за днес

@@ -56,7 +56,8 @@
                     <small class="form-text text-muted d-block mb-2">{{ form.orders.help_text }}</small>
                     {% endif %}
 
-                    <div class="border rounded p-3 bg-light" style="max-height: 300px; overflow-y: auto;">
+                    <div class="border rounded p-3 bg-light scrollable-box">
+
                         {% if form.orders.field.queryset.exists %}
                             {% for choice in form.orders %}
                                 <div class="form-check mb-2">

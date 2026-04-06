@@ -37,18 +37,18 @@
             <table class="table table-hover align-middle">
                 <thead class="table-dark">
                     <tr>
-                        <th style="width: 5%">#</th>
-                        <th style="width: 20%">Клиент</th>
-                        <th style="width: 15%">Телефон</th>
-                        <th style="width: 20%">Адрес</th>
-                        <th style="width: 15%">Статус</th>
-                        <th style="width: 15%">Дата</th>
-                        <th style="width: 10%">{% if user.role in 'Admin,Staff' %}Действия{% else %}Преглед{% endif %}</th>
+                        <th width="5%">#</th>
+                        <th width="20%">Клиент</th>
+                        <th width="15%">Телефон</th>
+                        <th width="20%">Адрес</th>
+                        <th width="15%">Статус</th>
+                        <th width="15%">Дата</th>
+                        <th width="10%">{% if user.role in 'Admin,Staff' %}Действия{% else %}Преглед{% endif %}</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for order in orders %}
-                        <tr {% if order.status == 'completed' %}class="text-muted table-light" style="opacity: 0.8;"{% endif %}>
+                        <tr {% if order.status == 'completed' %}class="text-muted table-light opacity-75"{% endif %}>
                             <td><strong>{{ order.id }}</strong></td>
 
                             <!-- Показваме името на логнатия клиент, ако е свързан, иначе ръчно въведеното име -->
