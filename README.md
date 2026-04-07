@@ -4,6 +4,7 @@
 ![Python](https://img.shields.io/badge/Python-3.12-blue.svg)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Latest-blue.svg)
 ![Bootstrap](https://img.shields.io/badge/Bootstrap-5.3-purple.svg)
+![AWS](https://img.shields.io/badge/AWS-EC2-orange.svg)
 
 ## 📋 Описание на прoекта
 
@@ -164,18 +165,18 @@ DATABASES = {
 }
 ```
 
-#### ��лтернатива (SQLite за тестване):
+#### Aлтернатива (SQLite за тестване):
 
 Проектът работи и със SQLite по подразбиране - не се изисква допълнителна конфигурация.
 
-### Стъпка 7: Миграции
+### Стъпка 6: Миграции
 
 ```bash
 python manage.py makemigrations
 python manage.py migrate
 ```
 
-### Стъпка 8: Създаване на Django Groups (Важно!)
+### Стъпка 7: Създаване на Django Groups (Важно!)
 
 Създайте потребителските групи за ролите:
 
@@ -193,13 +194,13 @@ Group.objects.get_or_create(name='Admin')
 exit()
 ```
 
-### Стъпка 9: Създаване на суперпотребител
+### Стъпка 8: Създаване на суперпотребител
 
 ```bash
 python manage.py createsuperuser
 ```
 
-### Стъпка 8: Стартиране на сървъра
+### Стъпка 9: Стартиране на сървъра
 
 ```bash
 python manage.py runserver
@@ -428,9 +429,91 @@ python create_test_orders.py
 
 ---
 
+## 🌐 Deployment & Server Architecture
+
+Проектът е разгърнат в облачна среда (AWS EC2) с използване на индустриални стандарти за стабилност и сигурност.
+
+### 🏗️ Стек на производствената среда (Production Stack):
+
+- **Cloud Provider**: AWS (Amazon Web Services) – EC2 Instance (Ubuntu 24.04 LTS)
+- **Web Server**: Nginx – служи като Reverse Proxy, обработва статичните файлове и насочва HTTP трафика
+- **Application Server**: Gunicorn – WSGI сървър, който предава заявките от Nginx към Django приложението
+- **Process Management**: Systemd – използва се за автоматично стартиране и управление на Gunicorn процесите (`gunicorn.service` и `gunicorn.socket`)
+- **Static Files Management**: WhiteNoise – сервиране на статични файлове директно от Django
+- **Database**: PostgreSQL 14+ на същата EC2 инстанция
+
+### ⚙️ Конфигурационни детайли:
+
+**Security:**
+- `DEBUG = False` за предотвратяване изтичането на системна информация
+- Конфигуриран `ALLOWED_HOSTS` и `CSRF_TRUSTED_ORIGINS` за IP адреса на инстанцията
+- Environment variables за чувствителни данни
+- PostgreSQL authentication
+
+**Environment:**
+- Изолирана виртуална среда (`venv`) за управление на зависимостите
+- Systemd services за автоматично стартиране при ребут
+
+**Performance:**
+- Nginx за кеширане и оптимизация на статични файлове
+- Gunicorn с 3 worker процеса
+- PostgreSQL connection pooling
+
+### 🔄 CI/CD Workflow (Процес на обновяване):
+
+За поддръжка на приложението се използва следният работен процес:
+
+1. **Локална разработка**: Кодът се тества локално в PyCharm
+2. **Version Control**: Промените се изтласкват към GitHub хранилище
+3. **Deployment**: На AWS сървъра се изпълнява:
+
+```bash
+cd /home/ubuntu/AluPVCSystem
+git pull origin main
+source venv/bin/activate
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py collectstatic --noinput
+sudo systemctl restart gunicorn
+sudo systemctl restart nginx
+```
+
+### 📡 Достъп до приложението (Live Demo):
+
+**Проектът е достъпен публично на следния адрес:**
+
+- **Основен адрес**: http://52.47.134.154
+- **Административен панел**: http://52.47.134.154/admin
+
+**Тестов администратор:**
+- Username: `yaldaz.vacheva`
+- Парола: Предоставена при защита
+- Забележка: При нужда от тестов достъп преди защитата, моля свържете се с автора на посочения имейл.
+
+### 🔒 Security Note:
+
+> **Забележка**: За целите на прототипа и изпита е използван HTTP протокол. В реална производствена среда би се добавил SSL сертификат чрез Certbot (Let's Encrypt), който да се конфигурира в Nginx за защитена връзка (HTTPS).
+
+### 📋 Deployment Checklist:
+
+- [x] DEBUG = False в production
+- [x] SECRET_KEY в environment variable
+- [x] ALLOWED_HOSTS конфигурирани
+- [x] PostgreSQL база данни
+- [x] Gunicorn WSGI server
+- [x] Nginx reverse proxy
+- [x] Systemd service management
+- [x] Static files сервирани от Nginx
+- [x] Media files upload директория
+- [x] Django-Q2 worker за async задачи
+- [ ] SSL/HTTPS (планирано за production)
+- [ ] Automated backups (планирано)
+
+---
+
 ## 🎓 Проект за изпит Django Basics @ SoftUni
 
-Този проект е създаден за индивидуален изпит по Django Basics @ SoftUni (Февруари 2026).
+Този проект е създаден за индивидуален изпит по Django Basics @ SoftUni (Април 2026).
 
 ### Покрити изисквания:
 
@@ -463,16 +546,18 @@ python create_test_orders.py
 
 ## 📧 Контакти
 
-**Автор**: Йълдъз Въчева 
-**GitHub**: [github.com/yaldazv](https://github.com/yaldazv)
+**Автор**: Йълдъз Въчева  
+**GitHub**: [github.com/yaldazv](https://github.com/yaldazv)  
+**Email**: yaldazp@gmail.com
 
 ---
 
 ## 📜 Лиценз
 
-Този проект е създаден за учебни цели като част от курса Django Basics @ SoftUni.
+Този проект е създаден за учебни цели като част от курса Django Advanced @ SoftUni.
 
 ---
 
 **Дата на създаване**: Февруари 2026  
-**Последна актуализация**: 24.02.2026
+**Последна актуализация**: Април 2026  
+**Deployment**: AWS EC2 (April 2026)

@@ -26,17 +26,9 @@ class CustomUser(AbstractUser):
         if self.role == self.RoleChoices.ADMIN:
             self.is_staff = True
             self.is_superuser = True
-
-        elif self.role == self.RoleChoices.STAFF:
-            self.is_staff = True
-            self.is_superuser = False
-        else:
-
-            self.is_staff = False
-            self.is_superuser = False
-
+        # Махаме 'else' блока, който занулява всичко,
+        # за да не чупим суперпотребителите създадени ръчно.
         super().save(*args, **kwargs)
-
 
 @receiver(post_save, sender=CustomUser)
 def assign_user_to_group(sender, instance, created, **kwargs):
