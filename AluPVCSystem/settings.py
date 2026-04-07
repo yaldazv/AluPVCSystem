@@ -26,10 +26,10 @@ environ.Env.read_env(BASE_DIR / ".env")
 SECRET_KEY = env('SECRET_KEY', default='django-insecure-4_+76j$m5rg-b)59ye^#)n_s)#(q30ta(f%*yy+135)xs^btx=')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = env.bool('DEBUG', default=True)
+DEBUG = False
 
-ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1', '*'])
-
+# Махни звездичката '*' и сложи твоя IP адрес
+ALLOWED_HOSTS = ['52.47.134.154', 'localhost', '127.0.0.1']
 
 # Application definition
 

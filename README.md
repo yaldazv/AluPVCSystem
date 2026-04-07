@@ -168,14 +168,32 @@ DATABASES = {
 
 Проектът работи и със SQLite по подразбиране - не се изисква допълнителна конфигурация.
 
-### Стъпка 5: Миграции
+### Стъпка 7: Миграции
 
 ```bash
 python manage.py makemigrations
 python manage.py migrate
 ```
 
-### Стъпка 7: Създаване на суперпотребител
+### Стъпка 8: Създаване на Django Groups (Важно!)
+
+Създайте потребителските групи за ролите:
+
+```bash
+python manage.py shell
+```
+
+В Python shell-а изпълнете:
+```python
+from django.contrib.auth.models import Group
+Group.objects.get_or_create(name='Customer')
+Group.objects.get_or_create(name='Staff')
+Group.objects.get_or_create(name='Supplier')
+Group.objects.get_or_create(name='Admin')
+exit()
+```
+
+### Стъпка 9: Създаване на суперпотребител
 
 ```bash
 python manage.py createsuperuser
@@ -237,7 +255,29 @@ AluPVCSystem/
 
 ## 🎨 Функционалности
 
-### 1️⃣ Управление на материали
+### 0️⃣ Потребителски системи и роли
+
+- **Регистрация и логин с различни роли
+- **4 роли**:
+  - **Customer (Клиент)** - Може да подава заявки за оглед и да вижда собствените си поръчки
+  - **Staff (Персонал)** - Пълен достъп до поръчки, производство и монтажи
+  - **Supplier (Доставчик)** - Достъп до материали и доставки
+  - **Admin (Администратор)** - Пълен достъп + управление на потребители
+- **Одобрение на регистрации** от администратор
+- **Различна навигация** според ролята
+
+### 1️⃣ Заявки за безплатен оглед
+
+- Клиентите могат да подават заявки с:
+  - Описание на заданието
+  - Телефон и адрес за оглед
+  - **Качване на снимка/скица** (ImageField)
+- Персоналът вижда всички заявки и може да:
+  - Променя статуса (Нова → Насрочена → Взети размери → Превърната в поръчка)
+  - Добавя бележки
+  - Превръща заявката в реална поръчка
+
+### 2️⃣ Управление на материали
 
 - Добавяне на профили (PVC/Алуминий) с характеристики
 - Управление на обков и аксесоари
@@ -394,19 +434,19 @@ python create_test_orders.py
 
 ### Покрити изисквания:
 
-✅ 3 Django apps (inventory, production, scheduling)  
-✅ 8 database models  
-✅ Many-to-One и Many-to-Many relationships  
-✅ 8 forms с validations  
-✅ 20+ views (FBV)  
-✅ 22 templates с dynamic data  
-✅ Full CRUD за Order, Material, CustomProduct, Installation  
-✅ Template inheritance и reusable components  
-✅ Bootstrap design  
-✅ Navigation на всички страници  
-✅ 404 error page  
-✅ PostgreSQL support  
-✅ Clean code и OOP principles  
+✅ 3 Django apps (inventory, production, scheduling)
+✅ 8 database models
+✅ Many-to-One и Many-to-Many relationships
+✅ 8 forms с validations
+✅ 20+ views (FBV)
+✅ 22 templates с dynamic data
+✅ Full CRUD за Order, Material, CustomProduct, Installation
+✅ Template inheritance и reusable components
+✅ Bootstrap design
+✅ Navigation на всички страници
+✅ 404 error page
+✅ PostgreSQL support
+✅ Clean code и OOP principles
 
 ### Advanced Features:
 
