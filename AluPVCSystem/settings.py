@@ -28,10 +28,10 @@ SECRET_KEY = env('SECRET_KEY', default='django-insecure-4_+76j$m5rg-b)59ye^#)n_s
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-# Махни звездичката '*' и сложи твоя IP адрес
 ALLOWED_HOSTS = ['52.47.134.154', 'localhost', '127.0.0.1']
+CSRF_TRUSTED_ORIGINS = ['http://52.47.134.154']
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'http')
 
-# Application definition
 
 INSTALLED_APPS = [
     "unfold",
@@ -164,6 +164,3 @@ CRISPY_TEMPLATE_PACK = "bootstrap5"
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-
-CSRF_TRUSTED_ORIGINS = ['http://52.47.134.154']
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'http')
