@@ -102,3 +102,11 @@ o	Do not push new commits until evaluation is complete; work locally until then.
 •	Project Documentation (README clarity, setup instructions, structure overview) - maximum 4 points
 •	Version Control (Git discipline: commits, structure, descriptive messages) - maximum 3 points
 •	Code Quality and Architecture (readability, OOP, structure) - maximum 3 points
+DB_NAME=alu_pvc_system
+DB_USER=postgres
+DB_PASSWORD=28100704
+DB_HOST=127.0.0.1
+DB_PORT=5432
+DEBUG=False
+SECRET_KEY='django-insecure-4_+76j$m5rg-b)59ye^#)n_s)#(q30ta(f%*yy+135)xs^btx='
+ALLOWED_HOSTS=52.47.134.154,localhost,127.0.0.1
